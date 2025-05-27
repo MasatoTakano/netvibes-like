@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+.nuxt
+.output
+dist
+.git
+.github
+.vscode

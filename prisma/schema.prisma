@@ -1,0 +1,74 @@
+// prisma/schema.prisma
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // ← ここを "sqlite" に変更 (または確認)
+  url      = env("DATABASE_URL") // ← .env ファイルの DATABASE_URL を参照
+}
+
+// --- User Model ---
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions  Session[] // User : Session = 1対多
+  keys      Key[]     // User : Key = 1対多
+
+  layout    Layout?   // User : Layout = 1対1
+  setting   Setting?  // User : Setting = 1対1
+}
+
+
+// --- Layout Model ---
+model Layout {
+  id        String   @id @default(cuid())
+  data      String   // ← Json から String に変更
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  data      String   // ← Json から String に変更
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- Lucia Auth Models ---
+model Session {
+  id        String   @id // セッションID
+  expiresAt DateTime // セッション有効期限
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId]) // ユーザーIDでの検索を高速化
+}
+
+model Key {
+  id              String  @id // キーID (例: "email:user@example.com")
+  hashedPassword  String? // ハッシュ化されたパスワード (ID/PW認証用)
+  userId          String
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId]) // ユーザーIDでの検索を高速化
+}

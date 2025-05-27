@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  nuxt-app:
+    build:
+      context: .
+      args:
+        # ビルド時の Prisma Generate 用に Docker 用のパスを渡す
+        DATABASE_URL_BUILD: "file:/app/.data/dev.db"
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.docker
+    volumes:
+      - ./.data:/app/.data
+    restart: unless-stopped
+    # 必要に応じてユーザー指定
+    # user: "node"

@@ -1,0 +1,108 @@
+{
+    "appTitle": "Netvibesもどき",
+    "themeSwitcher": {
+      "switchToDark": "ダークモードに切り替え",
+      "switchToLight": "ライトモードに切り替え"
+    },
+    "common": {
+      "loading": "読み込み中...",
+      "font": "フォント:",
+      "fontSize": "フォントサイズ (px):",
+      "apply": "適用",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "errorFontSize": "8～72の整数でフォントサイズを入力してください。",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "name": "名前",
+      "optional": "任意",
+      "error": {
+        "generic": "エラーが発生しました。時間をおいて再度お試しください。"
+      }
+    },
+    "signup": {
+      "title": "ユーザー登録",
+      "button": "登録する",
+      "passwordHint": "8文字以上で入力してください",
+      "alreadyHaveAccount": "アカウントをお持ちですか？",
+      "success": "ユーザー登録が完了しました。ログインページに移動します。",
+      "error": {
+          "Invalid email format": "メールアドレスの形式が正しくありません。",
+          "Password must be at least 8 characters long": "パスワードは8文字以上で入力してください。",
+          "Email already in use": "このメールアドレスは既に使用されています。",
+          "An internal server error occurred": "サーバーエラーが発生しました。"
+      }
+    },
+    "login": {
+        "title": "ログイン",
+        "button": "ログイン",
+        "noAccount": "アカウントをお持ちでないですか？",
+        "error": {
+            "Invalid credentials format": "メールアドレスまたはパスワードの形式が正しくありません。",
+            "Incorrect email or password": "メールアドレスまたはパスワードが正しくありません。",
+            "An internal server error occurred": "サーバーエラーが発生しました。"
+        }
+    },
+    "logout": {
+      "button": "ログアウト"
+    },
+    "widget": {
+      "name": "ウィジェット",
+      "empty": "ウィジェットを追加するか、ドラッグして配置してください",
+      "memoPlaceholder": "メモを入力してください…",
+      "settings": "設定",
+      "remove": "削除"
+    },
+    "globalSettings": {
+      "title": "全体設定",
+      "backgroundColor": "背景色:",
+      "colorWhite": "白",
+      "colorAliceBlue": "アリスブルー",
+      "colorWhiteSmoke": "ホワイトスモーク",
+      "colorLinen": "リネン",
+      "colorLavender": "ラベンダー",
+      "colorDarkSlateGray": "ダークスレートグレー",
+    },
+    "addWidget": {
+      "button": "+ ウィジェット追加",
+      "modalTitle": "ウィジェット追加",
+      "selectPrompt": "追加するウィジェットの種別を選択してください:",
+      "memo": "メモ",
+      "rss": "RSSフィード",
+      "rssUrlPrompt": "RSSフィードURL:",
+      "addButton": "ウィジェットを追加",
+      "errorInvalidUrl": "有効なURLを入力してください (http:// または https://)。"
+    },
+    "widgetMenuBar": {
+      "settings": "設定",
+      "remove": "削除",
+      "defaultMemoTitle": "メモ",
+      "defaultRssTitle": "RSSフィード"
+    },
+    "memoSettings": {
+      "title": "メモウィジェット設定",
+      "widgetTitle": "タイトル:",
+      "widgetTitlePlaceholder": "メモのタイトル（任意）",
+    },
+    "rssSettings": {
+      "title": "RSSウィジェット設定",
+      "feedUrl": "RSSフィードURL:",
+      "itemCount": "表示件数:",
+      "updateInterval": "自動更新間隔 (分):",
+      "manualOnly": "自動更新しない",
+      "invalidItemCount": "表示件数は1以上の整数で入力してください。"
+    },
+    "confirmDelete": {
+      "title": "ウィジェット削除確認",
+      "message": "本当にこの [ {itemDescription} ] ウィジェットを削除しますか？",
+      "cannotUndo": "この操作は元に戻せません。",
+      "delete": "削除",
+      "widgetFallback": "ウィジェット"
+    },
+    "rssReader": {
+      "loading": "RSSフィードを取得中...",
+      "error": "RSSフィードの読み込みに失敗しました。",
+      "errorDetails": "エラー詳細:",
+      "noItems": "このフィードにはアイテムがありません。"
+    }
+  }
