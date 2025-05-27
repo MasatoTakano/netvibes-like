@@ -37,7 +37,9 @@ COPY --from=builder /app/prisma/schema.prisma ./prisma/schema.prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # ホストの .env ファイルをコンテナの /app/.env にコピー
-COPY .env .env
+# 注意: Renderなどでデプロイする際はリポジトリ上に .env ファイルは存在しないのでコメントアウトする
+#       代わりに、.env内の環境変数はデプロイ時に個別に定義する
+# COPY .env .env
 
 # node ユーザーに変更する場合
 # コピーした .env ファイルにも権限を与える必要があるかもしれません
