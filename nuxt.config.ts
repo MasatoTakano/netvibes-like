@@ -15,21 +15,24 @@ export default defineNuxtConfig({
   i18n: {
     locales: [
       {
-        code: 'en', // 言語コード (URLパスや識別子として使われる)
+        code: 'en-US', // 言語コード (URLパスや識別子として使われる)
         iso: 'en-US', // ISO言語コード (SEOなどに利用)
         name: 'English', // 表示名（言語スイッチャーなどで使う）
         file: 'en-US.json' // 翻訳ファイル名 (後で作成)
       },
       {
-        code: 'ja',
+        code: 'ja-JP',
         iso: 'ja-JP',
         name: '日本語',
         file: 'ja-JP.json'
       }
     ],
-    lazy: true, // 翻訳ファイルを遅延読み込みする (推奨)
+    bundle: {
+      optimizeTranslationDirective: false
+    },
+    // lazy: true, // 翻訳ファイルを遅延読み込みする (推奨)
     langDir: 'locales', // 翻訳ファイルを置くディレクトリ (後で作成)
-    defaultLocale: 'ja', // デフォルトの言語
+    defaultLocale: 'ja-JP', // デフォルトの言語
     strategy: 'prefix_except_default', // URL戦略: デフォルト言語はプレフィックスなし ('/'), 他は '/en', '/fr' など
     detectBrowserLanguage: { // ブラウザの言語設定を検出してリダイレクトするか
       useCookie: true,          // 選択した言語をクッキーに保存するか

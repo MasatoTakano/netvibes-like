@@ -39,52 +39,62 @@
           </template>
         </div>
       </header>
-      <splitpanes class="default-theme app-splitpanes">
-        <pane
-          v-for="pane in panesData"
-          :key="pane.id"
-          :size="pane.size"
-          class="app-pane"
-        >
-        <draggable
-            v-model="pane.widgets"
-            item-key="id"
-            group="widgets-group"
-            tag="div"
-            class="drag-area"
-            ghost-class="ghost"
-            chosen-class="chosen"
-            drag-class="drag"
-            handle=".widget-menu-bar"
-            @change="handleDragChange($event, pane.id)"
+      <ClientOnly placeholder="Loading splitpanes...">
+        <splitpanes
+          class="default-theme app-splitpanes"
+          :key="splitpanesKey"
+          ref="splitpanesRef"
+          v-if="!isLoading && panesData.length > 0"
+          :watch-resized="true"
+          @resized="handlePaneResize"
+          @ready="handlePaneReady"
           >
-            <!-- #header -->
-            <template #header>
-            </template>
+          <pane
+            v-for="pane in panesData"
+            :key="pane.id"
+            :size="pane.size"
+            class="app-pane"
+          >
+          <draggable
+              v-model="pane.widgets"
+              item-key="id"
+              group="widgets-group"
+              tag="div"
+              class="drag-area"
+              ghost-class="ghost"
+              chosen-class="chosen"
+              drag-class="drag"
+              handle=".widget-menu-bar"
+              @change="handleDragChange($event, pane.id)"
+            >
+              <!-- #header -->
+              <template #header>
+              </template>
 
-            <!-- 各ウィジェットの表示 (WidgetCardコンポーネントを使用) -->
-            <template #item="{ element: widget }">
-              <WidgetCard
-                :widget="widget"
-                :pane-id="pane.id"
-                @toggle-collapse="toggleCollapse"
-                @open-settings="openSettingsModal"
-                @confirm-remove="confirmRemoveWidget"
-                @update:note-content="updateNoteContent"
-                @update:rss-title="updateRssWidgetTitle"
-                class="draggable-widget"
-              />
-            </template>
+              <!-- 各ウィジェットの表示 (WidgetCardコンポーネントを使用) -->
+              <template #item="{ element: widget }">
+                <WidgetCard
+                  :widget="widget"
+                  :pane-id="pane.id"
+                  @toggle-collapse="toggleCollapse"
+                  @open-settings="openSettingsModal"
+                  @confirm-remove="confirmRemoveWidget"
+                  @update:note-content="updateNoteContent"
+                  @update:rss-title="updateRssWidgetTitle"
+                  class="draggable-widget"
+                />
+              </template>
 
-            <!-- 空ペインのメッセージ -->
-            <template #footer>
-              <div v-if="!pane.widgets || pane.widgets.length === 0" class="empty-pane-message">
-                {{ $t('widget.empty') }}
-              </div>
-            </template>
-          </draggable>
-        </pane>
-      </splitpanes>
+              <!-- 空ペインのメッセージ -->
+              <template #footer>
+                <div v-if="!pane.widgets || pane.widgets.length === 0" class="empty-pane-message">
+                  {{ $t('widget.empty') }}
+                </div>
+              </template>
+            </draggable>
+          </pane>
+        </splitpanes>
+      </ClientOnly>
 
       <!-- RSS設定モーダル -->
       <RssSettingsModal
@@ -160,13 +170,16 @@ const { t } = useI18n();
 // --- デフォルトの初期データ ---
 const defaultPanesData: PaneData[] = [
   { id: 'pane-1', size: 33.3, widgets: [] },
-  { id: 'pane-2', size: 33.3, widgets: [] },
+  { id: 'pane-2', size: 33.4, widgets: [] },
   { id: 'pane-3', size: 33.3, widgets: [] },
 ];
 
 // 初期値は空配列にしておき、マウント後にAPIからロードする
 const panesData = ref<PaneData[]>([]);
-const isLoading = ref(true); // ローディング状態
+const isLoading = ref(true); // ローディング状態を追加
+const isSplitpanesReady = ref(false); // splitpanesの@readyが発火したか
+const allowPaneResizeHandling = ref(false); // resizedイベントの処理を許可するか
+const splitpanesKey = ref(0); // splitpanesのキー (強制的に再レンダリングするために使用)
 const isSaving = ref(false); // 保存中の状態を示すフラグ
 const saveError = ref<string | null>(null); // 保存エラーメッセージ
 
@@ -199,12 +212,23 @@ watchEffect(() => {
   }
 });
 
+
+watch([isLoading, isSplitpanesReady], ([loading, ready]) => {
+  if (!loading && ready) {
+    // DBロード完了 かつ splitpanes準備完了
+    // 少し遅延させてから resized イベントの処理を許可する
+    // これにより、初期化直後の自動発火をやり過ごす
+    setTimeout(() => {
+      allowPaneResizeHandling.value = true;
+    }, 500); // 500msの遅延
+  }
+});
+
 // --- Computed ---
 // 全体スタイルを適用するための computed プロパティ
 const globalStyles = computed(() => ({
   '--global-font-family': globalSettings.fontFamily,
   '--global-font-size': `${globalSettings.fontSize}px`,
-  // '--global-bg-color': globalSettings.backgroundColor,
 }));
 
 
@@ -226,37 +250,49 @@ function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (..
 
 // --- APIからデータをロード ---
 onMounted(async () => {
+  isLoading.value = true; // データロード開始
+  allowPaneResizeHandling.value = false; // 初期はリサイズ処理を許可しない
+
+  // 1. グローバル設定のロード
   try {
-    // $fetch を使って設定を取得
     const savedSettings = await $fetch<GlobalSettings>('/api/settings');
-    if (savedSettings) {
-      // 読み込んだ設定で globalSettings を更新
-      Object.assign(globalSettings, savedSettings);
-    }
+    if (savedSettings) Object.assign(globalSettings, savedSettings);
+    console.log('>>> [onMounted] Global settings loaded.');
   } catch (err) {
-      // エラー時はデフォルト設定が使われる
-      console.error('>>> [ERROR] [Client] Failed to load global settings from API:', err);
+    console.error('>>> [ERROR] [onMounted] Failed to load global settings:', err);
   }
 
-  isLoading.value = true;
+  // 2. レイアウトデータのロード
   try {
-    // $fetch を使用してAPIからレイアウトデータを取得
-    const loadedPanes = await $fetch<PaneData[]>('/api/layout');
+    const loadedPanesRaw = await $fetch<PaneData[]>('/api/layout');
 
-    // APIから有効なデータが返ってきたか確認
-    if (loadedPanes && Array.isArray(loadedPanes) && loadedPanes.length > 0) {
-      panesData.value = loadedPanes;
+    let panesToApply: PaneData[];
+
+    if (loadedPanesRaw && Array.isArray(loadedPanesRaw) && loadedPanesRaw.length > 0) {
+      const isValidStructure = loadedPanesRaw.every(p => p && typeof p.id === 'string' && typeof p.size === 'number' && Array.isArray(p.widgets));
+      if (isValidStructure) {
+        panesToApply = JSON.parse(JSON.stringify(loadedPanesRaw)); // コピーを作成
+
+        // 正規化処理
+        const totalSize = panesToApply.reduce((sum, pane) => sum + (pane.size || 0), 0);
+        if (totalSize > 0 && Math.abs(totalSize - 100) > 0.1) {
+          const factor = 100 / totalSize;
+          panesToApply.forEach(pane => {
+            if (typeof pane.size === 'number') pane.size = pane.size * factor;
+          });
+        }
+      } else {
+        panesToApply = JSON.parse(JSON.stringify(defaultPanesData));
+      }
     } else {
-      // APIからデータが取得できなかった、または空だった場合、デフォルトデータを使用
-      console.log('>>> [WARN] [INFO] [Client] No layout data found or API returned empty/invalid data. Using default layout.');
-      panesData.value = defaultPanesData;
+      panesToApply = JSON.parse(JSON.stringify(defaultPanesData));
     }
+    panesData.value = panesToApply;
+    splitpanesKey.value++; // splitpanesの再レンダリングを強制するためにキーを更新
   } catch (error) {
-    console.error('>>> [ERROR] [Client] Failed to load layout from API:', error);
-    // エラー発生時もデフォルトデータを表示
-    panesData.value = defaultPanesData;
+    panesData.value = JSON.parse(JSON.stringify(defaultPanesData)); // エラー時もデフォルト
   } finally {
-    isLoading.value = false;
+    isLoading.value = false; // データロード完了 (成功・失敗問わず)
   }
 });
 
@@ -264,6 +300,15 @@ onMounted(async () => {
 const saveLayoutDebounced = debounce(async () => {
   if (isLoading.value || panesData.value.length === 0) {
     return;
+  }
+
+  // 保存前にサイズ合計が100%に近いか確認・調整（念のため残しておく）
+  const totalSize = panesData.value.reduce((sum, pane) => sum + pane.size, 0);
+  if (Math.abs(totalSize - 100) > 0.1) {
+    const factor = 100 / totalSize;
+    panesData.value.forEach(pane => {
+      pane.size = pane.size * factor;
+    });
   }
 
   isSaving.value = true;
@@ -293,8 +338,46 @@ const saveGlobalSettingsDebounced = debounce(async () => {
  }, 500);
 
 // --- Methods ---
+// Splitpanesの準備完了イベントハンドラ
+const handlePaneReady = () => {
+  isSplitpanesReady.value = true;
+};
+
+// Splitpanesのリサイズイベントハンドラ
+const handlePaneResize = (eventPayload: { panes: Array<{ min: number, max: number, size: number }>, [key: string]: any }) => {
+  const resizedPanes = eventPayload.panes;
+
+  if (!allowPaneResizeHandling.value) {
+    return;
+  }  
+
+  if (isLoading.value) {
+    return;
+  }
+
+  if (resizedPanes && Array.isArray(resizedPanes) && resizedPanes.length === panesData.value.length) {
+    let sizesChanged = false;
+    panesData.value.forEach((pane, index) => {
+      const newSize = resizedPanes[index]?.size;
+      if (newSize !== undefined && Math.abs(pane.size - newSize) > 0.01) {
+        pane.size = newSize;
+        sizesChanged = true;
+      }
+    });
+
+    if (sizesChanged) {
+      saveLayoutDebounced();
+    }
+  }
+};
+
+
 // RSSウィジェット更新処理
 const updateRssWidgetTitle = (widgetId: string, paneId: string, newTitle: string) => {
+  if (isLoading.value) {
+    return;
+  }
+
   const pane = panesData.value.find(p => p.id === paneId);
   const widget = pane?.widgets.find(w => w.id === widgetId && w.type === 'rss') as RssWidget | undefined;
   if (widget && widget.feedTitle !== newTitle) {
@@ -305,6 +388,10 @@ const updateRssWidgetTitle = (widgetId: string, paneId: string, newTitle: string
 
 // メモウィジェット更新処理
 const updateNoteContent = (widgetId: string, newContent: string): void => {
+  if (isLoading.value) {
+    return;
+  }
+
   let found = false;
   for (const pane of panesData.value) {
     const widgetIndex = pane.widgets.findIndex(widget => widget.id === widgetId && widget.type === 'note');
@@ -470,12 +557,12 @@ const handleSaveRssSettings = (payload: RssSettingsPayload) => {
   const widgetIndex = targetPane?.widgets.findIndex(w => w.id === widgetId && w.type === 'rss');
 
   if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-      const widgetToUpdate = targetPane.widgets[widgetIndex] as RssWidget;
-      // settings の内容で上書き
-      Object.assign(widgetToUpdate, settings);
-      saveLayoutDebounced();
+    const widgetToUpdate = targetPane.widgets[widgetIndex] as RssWidget;
+    // settings の内容で上書き
+    Object.assign(widgetToUpdate, settings);
+    saveLayoutDebounced();
   } else {
-      console.error(`>>> [ERROR] [Client] Could not find RSS widget ${widgetId} to save settings from modal.`);
+    console.error(`>>> [ERROR] [Client] Could not find RSS widget ${widgetId} to save settings from modal.`);
   }
   closeModal();
 };
@@ -487,38 +574,42 @@ const handleSaveMemoSettings = (payload: MemoSettingsPayload) => {
    const widgetIndex = targetPane?.widgets.findIndex(w => w.id === widgetId && w.type === 'note');
 
    if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-       const widgetToUpdate = targetPane.widgets[widgetIndex] as NoteWidget;
-       Object.assign(widgetToUpdate, settings);
-       saveLayoutDebounced();
+      const widgetToUpdate = targetPane.widgets[widgetIndex] as NoteWidget;
+      Object.assign(widgetToUpdate, settings);
+      saveLayoutDebounced();
    } else {
-        console.error(`>>> [ERROR] [Client] Could not find Memo widget ${widgetId} to save settings from modal.`);
+      console.error(`>>> [ERROR] [Client] Could not find Memo widget ${widgetId} to save settings from modal.`);
    }
+
    closeModal();
 };
 
 // 全体設定モーダルの保存イベントハンドラ
 const handleSaveGlobalSettings = (payload: GlobalSettings) => {
-    Object.assign(globalSettings, payload); // globalSettings を更新
+  Object.assign(globalSettings, payload); // globalSettings を更新
 
-    panesData.value.forEach(pane => {
-        pane.widgets.forEach(widget => {
-            if (widget.type === 'note' || widget.type === 'rss') {
-                widget.fontFamily = payload.fontFamily;
-                widget.fontSize = payload.fontSize;
-            }
-        });
-    });
+  panesData.value.forEach(pane => {
+      pane.widgets.forEach(widget => {
+          if (widget.type === 'note' || widget.type === 'rss') {
+              widget.fontFamily = payload.fontFamily;
+              widget.fontSize = payload.fontSize;
+          }
+      });
+  });
 
-
-    // 全体設定DB保存
-    saveGlobalSettingsDebounced();
-    // レイアウトDB保存
-    saveLayoutDebounced();
-    closeModal();
+  // 全体設定DB保存
+  saveGlobalSettingsDebounced();
+  // レイアウトDB保存
+  saveLayoutDebounced();
+  closeModal();
 };
 
 // ウィジェット折りたたみ・展開処理
 const toggleCollapse = (widgetId: string, paneId: string) => {
+  if (isLoading.value) {
+    return;
+  }
+
   const pane = panesData.value.find(p => p.id === paneId);
   const widget = pane?.widgets.find(w => w.id === widgetId);
   if (widget) {

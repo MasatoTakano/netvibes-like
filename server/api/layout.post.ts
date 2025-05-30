@@ -52,18 +52,14 @@ export default defineEventHandler(async (event) => {
     layoutDataFromClient = await readBody(event);
     console.log(`[API POST /api/layout] Received layout data for user ${userId}:`, layoutDataFromClient);
 
-    // --- 入力データバリデーション (より具体的に) ---
-    // ここでは最低限のチェックのみ。必要に応じてより厳密なバリデーションを追加してください。
-    // (例: Zod などのバリデーションライブラリを使う)
+    // --- 入力データバリデーション ---
     if (!layoutDataFromClient || typeof layoutDataFromClient !== 'object') {
         throw createError({ statusCode: 400, statusMessage: 'Bad Request: Invalid layout data format (must be an object/array)' });
     }
+
     // 必要であれば、配列であること、各要素が特定のプロパティを持つことなどをチェック
     if (!Array.isArray(layoutDataFromClient)) {
        console.warn(`[API POST /api/layout] Received non-array layout data for user ${userId}. Type: ${typeof layoutDataFromClient}`);
-       // 配列でない場合どうするか？ エラーにするか、特定の処理をするか。
-       // ここではエラーにする例：
-       // throw createError({ statusCode: 400, statusMessage: 'Bad Request: Layout data must be an array' });
     }
 
   } catch (readError: any) {
@@ -96,14 +92,12 @@ export default defineEventHandler(async (event) => {
     });
 
     console.log(`[API POST /api/layout] Layout saved successfully for user ${userId}. DB updatedAt: ${upsertResult.updatedAt}`);
-    // 成功レスポンス
-    return { success: true };
 
+    return { success: true };
   } catch (dbError: any) {
     // データベースエラー
     console.error(`[API POST /api/layout] Database error saving layout for user ${userId}:`, dbError);
-    // Prisma のエラーコードなどで詳細なハンドリングも可能
-    // if (dbError instanceof Prisma.PrismaClientValidationError) { ... }
+
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal Server Error: Failed to save layout state to DB',

@@ -1,29 +1,29 @@
 # ビルドステージ
-FROM node:22-alpine AS builder
+FROM node:23-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache openssl openssl-dev
 
 # docker-compose.yml から渡されるビルド引数を宣言
-# ARG DATABASE_URL_BUILD
+ARG DATABASE_URL_BUILD
 
 COPY package*.json ./
 COPY prisma ./prisma
 
 # ビルド引数を使って、prisma generate 用の一時的な .env を作成
-# RUN echo "DATABASE_URL=${DATABASE_URL_BUILD}" > .env.build-tmp
+RUN echo "DATABASE_URL=${DATABASE_URL_BUILD}" > .env.build-tmp
 
 RUN npm install
 # Prismaクライアントを生成 (上記で作成した一時 .env を参照)
 RUN npx prisma generate
 
 # 一時的な .env は不要なので削除
-# RUN rm .env.build-tmp
+RUN rm .env.build-tmp
 
 COPY . .
 RUN npm run build
 
 # --- 実行ステージ ---
-FROM node:22-alpine AS runtime
+FROM node:23-alpine AS runtime
 WORKDIR /app
 RUN apk add --no-cache openssl
 
@@ -37,9 +37,7 @@ COPY --from=builder /app/prisma/schema.prisma ./prisma/schema.prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # ホストの .env ファイルをコンテナの /app/.env にコピー
-# 注意: Renderなどでデプロイする際はリポジトリ上に .env ファイルは存在しないのでコメントアウトする
-#       代わりに、.env内の環境変数はデプロイ時に個別に定義する
-# COPY .env .env
+COPY .env .env
 
 # node ユーザーに変更する場合
 # コピーした .env ファイルにも権限を与える必要があるかもしれません

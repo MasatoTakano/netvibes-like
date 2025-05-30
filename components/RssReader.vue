@@ -296,8 +296,8 @@ watch([() => props.feedUrl, () => props.updateIntervalMinutes], ([newUrl], [oldU
   list-style: none;
   padding: 0;
   margin: 0;
-  overflow-y: auto; /* ★ はみ出したらスクロール */
-  flex-grow: 1; /* ★ 残りの高さを埋める */
+  overflow-y: auto; /* はみ出したらスクロール */
+  flex-grow: 1; /* 残りの高さを埋める */
 }
 
 .feed-item {
