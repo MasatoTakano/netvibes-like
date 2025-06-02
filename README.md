@@ -1,21 +1,13 @@
 # Netvibes like app
+Memo and RSS widget management application.
 
 ## Setup
 
 Make sure to install dependencies:
 
 ```bash
-# npm
+# npm or yarn or bun
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
 ## Copy .env.example to .env.local, .env.example.docker to .env.docker
@@ -32,17 +24,8 @@ Edit .env.local and .env.docker and set your own strings on AUTH_SECRET
 Start the development server on `http://localhost:3000`:
 
 ```bash
-# npm
+# npm or yarn or bun
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
 ## Production
@@ -50,34 +33,10 @@ bun run dev
 Build the application for production:
 
 ```bash
-# npm
+# npm or yarn or bun
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
 
 ## Run on docker container
 ```bash
