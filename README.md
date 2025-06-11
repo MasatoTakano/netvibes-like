@@ -1,6 +1,8 @@
 # Netvibes like app
 Memo and RSS widget management application.
 
+![NetVibesもどき_メイン画面](https://github.com/user-attachments/assets/0b3ef86e-0d44-45cb-aa99-860e47641831)
+
 ## Setup
 
 Make sure to install dependencies:
