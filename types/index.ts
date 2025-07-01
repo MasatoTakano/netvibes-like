@@ -3,7 +3,7 @@
 // --- 基本ウィジェット型 ---
 export interface WidgetBase {
     id: string;
-    type: 'note' | 'rss';
+    type: 'note' | 'rss' | 'calendar';
   }
   
   // --- メモウィジェット型 ---
@@ -27,11 +27,18 @@ export interface WidgetBase {
     updateIntervalMinutes?: number | null; // 更新間隔 (null許容)
     isCollapsed?: boolean;
   }
+
+// --- Calendarウィジェット型 ---
+export interface CalendarWidget extends WidgetBase {
+  type: 'calendar';
+  iframeTag: string; // Google Calendarのiframeタグ
+  isCollapsed?: boolean;
+}
   
   // --- ペインデータ型 ---
   export interface PaneData {
     id: string;
-    widgets: (NoteWidget | RssWidget)[];
+    widgets: (NoteWidget | RssWidget | CalendarWidget)[];
     size: number; // 初期表示用
   }
   
@@ -70,3 +77,9 @@ export interface WidgetBase {
     paneId: string;
     settings: Pick<NoteWidget, 'title' | 'fontFamily' | 'fontSize'>;
   }
+
+export interface CalendarSettingsPayload {
+  widgetId: string;
+  paneId: string;
+  settings: Pick<CalendarWidget, 'iframeTag'>;
+}

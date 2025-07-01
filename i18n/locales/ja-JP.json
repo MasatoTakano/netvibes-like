@@ -51,7 +51,12 @@
     "empty": "ウィジェットを追加するか、ドラッグして配置してください",
     "memoPlaceholder": "メモを入力してください…",
     "settings": "設定",
-    "remove": "削除"
+    "remove": "削除",
+    "types": {
+      "note": "メモ",
+      "rss": "RSSフィード",
+      "googleCalendar": "Googleカレンダー"
+    }
   },
   "globalSettings": {
     "title": "全体設定",
@@ -69,6 +74,7 @@
     "selectPrompt": "追加するウィジェットの種別を選択してください:",
     "memo": "メモ",
     "rss": "RSSフィード",
+    "googleCalendar": "Googleカレンダー",
     "rssUrlPrompt": "RSSフィードURL:",
     "addButton": "ウィジェットを追加",
     "errorInvalidUrl": "有効なURLを入力してください (http:// または https://)。"
@@ -92,6 +98,12 @@
     "manualOnly": "自動更新しない",
     "invalidItemCount": "表示件数は1以上の整数で入力してください。"
   },
+  "calendarSettings": {
+    "title": "Googleカレンダーウィジェット設定",
+    "iframeTag": "Googleカレンダー iframeタグ:",
+    "iframePlaceholder": "ここにGoogleカレンダーのiframeコードを貼り付けてください。",
+    "invalidIframe": "有効なiframeタグを入力してください。"
+  },
   "confirmDelete": {
     "title": "ウィジェット削除確認",
     "message": "本当にこの [ {itemDescription} ] ウィジェットを削除しますか？",
@@ -104,5 +116,8 @@
     "error": "RSSフィードの読み込みに失敗しました。",
     "errorDetails": "エラー詳細:",
     "noItems": "このフィードにはアイテムがありません。"
+  },
+  "calendarWidget": {
+    "noIframe": "ウィジェット設定でGoogleカレンダーのiframeタグを設定してください。"
   }
 }

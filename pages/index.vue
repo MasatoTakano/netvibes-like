@@ -112,6 +112,13 @@
         @close="closeModal"
         @save="handleSaveMemoSettings"
       />
+      <!-- カレンダー設定モーダル -->
+      <CalendarSettingsModal
+        :show="activeModal === 'calendar'"
+        :widget-data="activeModal === 'calendar' ? { ...editingWidgetData, paneId: editingPaneId } : null"
+        @close="closeModal"
+        @save="handleSaveCalendarSettings"
+      />
       <!-- 全体設定モーダル -->
       <GlobalSettingsModal
          :show="activeModal === 'global'"
@@ -150,12 +157,13 @@
 import { ref, onMounted, watch, reactive, computed, watchEffect } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import draggable from 'vuedraggable';
-import type { PaneData, NoteWidget, RssWidget, GlobalSettings, RssSettingsPayload, MemoSettingsPayload } from '~/types';
+import type { PaneData, NoteWidget, RssWidget, CalendarWidget, GlobalSettings, RssSettingsPayload, MemoSettingsPayload, CalendarSettingsPayload } from '~/types';
 import { DEFAULT_GLOBAL_SETTINGS, AVAILABLE_FONTS,
   DEFAULT_NOTE_FONT_FAMILY, DEFAULT_NOTE_FONT_SIZE,
   DEFAULT_RSS_FONT_FAMILY, DEFAULT_RSS_FONT_SIZE,DEFAULT_RSS_ITEM_COUNT, DEFAULT_RSS_UPDATE_INTERVAL_MINUTES } from '~/constants';
 import RssSettingsModal from '~/components/RssSettingsModal.vue';
 import MemoSettingsModal from '~/components/MemoSettingsModal.vue';
+import CalendarSettingsModal from '~/components/CalendarSettingsModal.vue';
 import GlobalSettingsModal from '~/components/GlobalSettingsModal.vue';
 import AddWidgetModal from '~/components/AddWidgetModal.vue';
 import ConfirmDeleteModal from '~/components/ConfirmDeleteModal.vue';
@@ -185,8 +193,8 @@ const saveError = ref<string | null>(null); // 保存エラーメッセージ
 
 
 // --- State ---
-const activeModal = ref<'rss' | 'memo' | 'global' | 'add' | 'delete' | null>(null);
-const editingWidgetData = ref<NoteWidget | RssWidget | null>(null);
+const activeModal = ref<'rss' | 'memo' | 'global' | 'add' | 'delete' | 'calendar' | null>(null);
+const editingWidgetData = ref<NoteWidget | RssWidget | CalendarWidget | null>(null);
 const editingPaneId = ref<string | null>(null);
 const widgetToDelete = ref<{ widgetId: string; paneId: string; description: string; } | null>(null);
 
@@ -416,7 +424,7 @@ const openAddWidgetMenuForFirstPane = () => {
 };
 
 // ウィジェット追加処理
-const handleAddWidget = (payload: { type: 'note' | 'rss'; feedUrl?: string }) => {
+const handleAddWidget = (payload: { type: 'note' | 'rss' | 'calendar'; feedUrl?: string }) => {
   if (panesData.value.length > 0) {
     // 最初のペインIDを取得
     const firstPaneId = panesData.value[0].id;
@@ -425,6 +433,8 @@ const handleAddWidget = (payload: { type: 'note' | 'rss'; feedUrl?: string }) =>
       addMemoWidgetInternal(firstPaneId);
     } else if (payload.type === 'rss' && payload.feedUrl) {
       addRssWidgetInternal(firstPaneId, payload.feedUrl, DEFAULT_RSS_ITEM_COUNT);
+    } else if (payload.type === 'calendar') {
+      addCalendarWidgetInternal(firstPaneId);
     }
   } else {
      console.error(">>> [ERROR] [Client] Cannot add widget, no panes available.");
@@ -474,6 +484,23 @@ const addRssWidgetInternal = (paneId: string, feedUrl: string, itemCount: number
   }
 };
 
+// カレンダーウィジェットを追加する内部関数
+const addCalendarWidgetInternal = (paneId: string) => {
+  const targetPane = panesData.value.find(p => p.id === paneId);
+  if (targetPane) {
+    const newWidget: CalendarWidget = {
+      id: crypto.randomUUID(),
+      type: 'calendar',
+      iframeTag: '',
+      isCollapsed: false,
+    };
+    targetPane.widgets.push(newWidget);
+    saveLayoutDebounced();
+  } else {
+    console.warn(`>>> [ERROR] [Client] Could not find pane with id ${paneId} to add Calendar widget.`);
+  }
+};
+
 // 削除ボタンクリック時の処理 (確認モーダルを開く)
 const confirmRemoveWidget = (widgetId: string, paneId: string) => {
   const pane = panesData.value.find(p => p.id === paneId);
@@ -514,7 +541,7 @@ const handleDragChange = (evt: any, paneId: string) => {
 
 
 // メモ・RSSウィジェットの設定画面関係
-const openSettingsModal = (widgetId: string, paneId: string, widgetType: 'note' | 'rss') => {
+const openSettingsModal = (widgetId: string, paneId: string, widgetType: 'note' | 'rss' | 'calendar') => {
   const pane = panesData.value.find(p => p.id === paneId);
   const widget = pane?.widgets.find(w => w.id === widgetId);
   if (widget) {
@@ -528,6 +555,10 @@ const openSettingsModal = (widgetId: string, paneId: string, widgetType: 'note' 
     
       case 'rss':
         activeModal.value = 'rss';
+        break;
+
+      case 'calendar':
+        activeModal.value = 'calendar';
         break;
       default:
         break;
@@ -582,6 +613,22 @@ const handleSaveMemoSettings = (payload: MemoSettingsPayload) => {
    }
 
    closeModal();
+};
+
+// カレンダー設定モーダルの保存イベントハンドラ
+const handleSaveCalendarSettings = (payload: CalendarSettingsPayload) => {
+  const { widgetId, paneId, settings } = payload;
+  const targetPane = panesData.value.find(p => p.id === paneId);
+  const widgetIndex = targetPane?.widgets.findIndex(w => w.id === widgetId && w.type === 'calendar');
+
+  if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
+    const widgetToUpdate = targetPane.widgets[widgetIndex] as CalendarWidget;
+    Object.assign(widgetToUpdate, settings);
+    saveLayoutDebounced();
+  } else {
+    console.error(`>>> [ERROR] [Client] Could not find Calendar widget ${widgetId} to save settings from modal.`);
+  }
+  closeModal();
 };
 
 // 全体設定モーダルの保存イベントハンドラ

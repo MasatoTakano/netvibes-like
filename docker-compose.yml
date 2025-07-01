@@ -5,8 +5,8 @@ services:
       args:
         # ビルド時の Prisma Generate 用に Docker 用のパスを渡す
         DATABASE_URL_BUILD: "file:/app/.data/dev.db"
-    ports:
-      - "3000:3000"
+    ports: # ホストの3000番は他アプリ開発でよく使われるので避ける
+      - "3100:3000"
     env_file:
       - .env.docker
     volumes:

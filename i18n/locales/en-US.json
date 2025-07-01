@@ -69,6 +69,7 @@
     "selectPrompt": "Select the type of widget you want to add:",
     "memo": "Memo Note",
     "rss": "RSS Feed",
+    "googleCalendar": "Google Calendar",
     "rssUrlPrompt": "RSS Feed URL:",
     "addButton": "Add Widget",
     "errorInvalidUrl": "Please enter a valid URL starting with http:// or https://."
@@ -92,6 +93,12 @@
     "manualOnly": "Manual Only",
     "invalidItemCount": "Please enter a positive number for item count."
   },
+  "calendarSettings": {
+    "title": "Google Calendar Widget Settings",
+    "iframeTag": "Google Calendar Iframe Tag:",
+    "iframePlaceholder": "Paste your Google Calendar iframe code here.",
+    "invalidIframe": "Please enter a valid iframe tag."
+  },
   "confirmDelete": {
     "title": "Confirm Deletion",
     "message": "Are you sure you want to delete this [ {itemDescription} ] widget?",
@@ -104,5 +111,8 @@
     "error": "Failed to load RSS feed.",
     "errorDetails": "Error details:",
     "noItems": "No items found in this feed."
+  },
+  "calendarWidget": {
+    "noIframe": "Please set your Google Calendar iframe tag in the widget settings."
   }
 }

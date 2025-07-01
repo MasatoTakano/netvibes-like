@@ -16,7 +16,7 @@
         <span class="widget-title">{{ getWidgetTitle(widget) }}</span>
         <div class="widget-actions">
           <span
-            v-if="widget.type === 'note' || widget.type === 'rss'"
+            v-if="widget.type === 'note' || widget.type === 'rss' || widget.type === 'calendar'"
             class="widget-action-icon settings-icon"
             @click.stop="emitOpenSettings"
             :title="t('widget.settings')"
@@ -55,22 +55,29 @@
           @update:title="emitUpdateRssTitle"
           class="draggable-widget-content"
         />
+        <CalendarWidgetComponent
+          v-else-if="widget.type === 'calendar'"
+          :id="widget.id"
+          :iframe-tag="widget.iframeTag"
+          class="draggable-widget-content"
+        />
       </div>
     </div>
   </template>
   
   <script setup lang="ts">
   import type { PropType } from 'vue';
-  import type { NoteWidget, RssWidget } from '~/types';
+  import type { NoteWidget, RssWidget, CalendarWidget } from '~/types';
   import MemoNote from '~/components/MemoNote.vue'; // Passenden Pfad sicherstellen
   import RssReader from '~/components/RssReader.vue'; // Passenden Pfad sicherstellen
+  import CalendarWidgetComponent from '~/components/CalendarWidget.vue';
   
   const { t } = useI18n(); // i18n を利用
   
   // --- Props ---
   const props = defineProps({
     widget: {
-      type: Object as PropType<NoteWidget | RssWidget>,
+      type: Object as PropType<NoteWidget | RssWidget | CalendarWidget>,
       required: true,
     },
     paneId: {
@@ -82,19 +89,21 @@
   // --- Emits ---
   const emit = defineEmits<{
     (e: 'toggle-collapse', widgetId: string, paneId: string): void
-    (e: 'open-settings', widgetId: string, paneId: string, widgetType: 'note' | 'rss'): void
+    (e: 'open-settings', widgetId: string, paneId: string, widgetType: 'note' | 'rss' | 'calendar'): void
     (e: 'confirm-remove', widgetId: string, paneId: string): void
     (e: 'update:noteContent', widgetId: string, content: string): void // メモ内容更新イベント
     (e: 'update:rssTitle', widgetId: string, paneId: string, title: string): void // RSSタイトル更新イベント
   }>();
   
   // --- Methods ---
-  const getWidgetTitle = (widget: NoteWidget | RssWidget): string => {
+  const getWidgetTitle = (widget: NoteWidget | RssWidget | CalendarWidget): string => {
     if (widget.type === 'note') {
       return widget.title || t('widget.types.note'); // i18n を使う
     } else if (widget.type === 'rss') {
       // feedTitle があればそれ、なければデフォルト
       return widget.feedTitle || t('widget.types.rss'); // i18n を使う
+    } else if (widget.type === 'calendar') {
+      return t('widget.types.googleCalendar');
     }
     return t('widget.name'); // i18n を使う
   };
@@ -104,7 +113,9 @@
   };
   
   const emitOpenSettings = () => {
-    emit('open-settings', props.widget.id, props.paneId, props.widget.type);
+    if (props.widget.type === 'note' || props.widget.type === 'rss' || props.widget.type === 'calendar') {
+      emit('open-settings', props.widget.id, props.paneId, props.widget.type);
+    }
   };
   
   const emitConfirmRemove = () => {
