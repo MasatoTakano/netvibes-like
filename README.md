@@ -1,6 +1,30 @@
-# Netvibes like app
+# Memo App
+
+This is a web application built with Nuxt.js (v3) and TypeScript, providing a customizable dashboard interface where users can add, arrange, and manage various widgets.
+
+## Features
+
+-   **Widget-based Dashboard:** Create and manage a personalized dashboard with various widgets.
+-   **User Authentication:** Secure user authentication powered by Lucia Auth.
+-   **Layout Persistence:** User-specific widget layouts are saved and loaded.
+-   **Multiple Widget Types:** Includes Memo/Note, RSS Reader, and Google Calendar widgets.
+
+## Technologies
+
+-   **Frontend:** Nuxt.js (Vue.js 3), TypeScript, `splitpanes`, `vuedraggable`, `@nuxtjs/i18n`
+-   **Backend:** Nuxt.js server routes, Prisma (ORM), Lucia Auth
+-   **Database:** Configured via Prisma (e.g., SQLite, PostgreSQL)
 
 ## Setup
+
+First, copy and rename the example environment files:
+
+```bash
+cp .env.example .env
+cp .env.example.docker .env.docker
+```
+
+Then, edit `.env` and `.env.docker` to configure your environment variables.
 
 Make sure to install dependencies:
 
@@ -17,15 +41,6 @@ yarn install
 # bun
 bun install
 ```
-
-## Copy .env.example to .env.local, .env.example.docker to .env.docker
-```bash
-cp .env.example .env.local
-cp .env.example.docker .env.docker
-```
-
-## Set AUTH_SECRET on .env files
-Edit .env.local and .env.docker and set your own strings on AUTH_SECRET
 
 ## Development Server
 
@@ -79,7 +94,4 @@ yarn preview
 bun run preview
 ```
 
-## Run on docker container
-```bash
-docker compose up -d
-```
+Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
