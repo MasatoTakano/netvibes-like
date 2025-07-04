@@ -7,8 +7,8 @@ export default defineEventHandler(async (event) => {
   if (!sessionId) {
     // セッションがなければ既にログアウト状態 or エラー
     throw createError({
-        statusCode: 403, // Forbidden
-        statusMessage: "Not logged in"
+      statusCode: 403, // Forbidden
+      statusMessage: 'Not logged in',
     });
   }
 
@@ -17,7 +17,12 @@ export default defineEventHandler(async (event) => {
 
   // セッションを削除する Cookie を発行
   const sessionCookie = lucia.createBlankSessionCookie();
-  setCookie(event, sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+  setCookie(
+    event,
+    sessionCookie.name,
+    sessionCookie.value,
+    sessionCookie.attributes,
+  );
 
   console.log(`Session invalidated: ${sessionId}`);
   return { success: true };

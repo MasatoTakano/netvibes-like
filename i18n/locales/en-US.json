@@ -38,9 +38,9 @@
     "button": "Login",
     "noAccount": "Do you not have an account?",
     "error": {
-        "Invalid credentials format": "mail address or password format is incorrect",
-        "Incorrect email or password": "mail address or password is incorrect",
-        "An internal server error occurred": "An internal server error occurred"
+      "Invalid credentials format": "mail address or password format is incorrect",
+      "Incorrect email or password": "mail address or password is incorrect",
+      "An internal server error occurred": "An internal server error occurred"
     }
   },
   "logout": {
@@ -51,7 +51,12 @@
     "empty": "Drag widgets here or add a new one.",
     "memoPlaceholder": "Enter your note...",
     "settings": "Settings",
-    "remove": "Remove"
+    "remove": "Remove",
+    "types": {
+      "note": "Memo",
+      "rss": "RSS Feed",
+      "googleCalendar": "Google Calendar"
+    }
   },
   "globalSettings": {
     "title": "Global Settings",
@@ -83,7 +88,7 @@
   "memoSettings": {
     "title": "Memo Widget Settings",
     "widgetTitle": "Title:",
-    "widgetTitlePlaceholder": "Enter memo title (optional)",
+    "widgetTitlePlaceholder": "Enter memo title (optional)"
   },
   "rssSettings": {
     "title": "RSS Widget Settings",

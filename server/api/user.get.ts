@@ -16,13 +16,23 @@ export default defineEventHandler(async (event) => {
   // 新しい有効期限でセッションを更新し、新しい Cookie を発行する場合
   if (session && session.fresh) {
     const sessionCookie = lucia.createSessionCookie(session.id);
-    setCookie(event, sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+    setCookie(
+      event,
+      sessionCookie.name,
+      sessionCookie.value,
+      sessionCookie.attributes,
+    );
   }
   // セッションが無効だった場合 (期限切れなど)
   if (!session) {
     // 無効なセッションを示す Cookie を発行
     const sessionCookie = lucia.createBlankSessionCookie();
-    setCookie(event, sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+    setCookie(
+      event,
+      sessionCookie.name,
+      sessionCookie.value,
+      sessionCookie.attributes,
+    );
     return { user: null };
   }
 

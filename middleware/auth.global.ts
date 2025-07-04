@@ -1,12 +1,12 @@
 // middleware/auth.global.ts
-export default defineNuxtRouteMiddleware((to, from) => {
+export default defineNuxtRouteMiddleware((to) => {
   // 公開ページへのリクエスト
   const publicPages = ['/login', '/signup'];
   if (publicPages.includes(to.path)) {
     return;
   }
 
-  const { user, isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuth();
 
   // ログイン済みでない、かつ /login 以外へのリクエストの場合、ログイン画面にリダイレクト
   if (!isLoggedIn.value && to.path !== '/login') {

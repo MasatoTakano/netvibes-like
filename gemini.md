@@ -15,7 +15,7 @@ This is a web application built with **Nuxt.js (v3)** and **TypeScript**. It pro
   - **Drag & Drop:** `vuedraggable` is likely used for rearranging widgets.
   - **Internationalization:** `@nuxtjs/i18n` is used for managing multiple languages (e.g., `en-US`, `ja-JP`).
 
-- **Backend (within Nuxt's `/server` directory):
+- \*\*Backend (within Nuxt's `/server` directory):
   - **API:** A server-side API is defined under `/server/api` to handle data persistence and business logic.
   - **Authentication:** User authentication is managed by **Lucia Auth** (`lucia-auth/adapter-prisma`).
   - **Database ORM:** **Prisma** is used to interact with the database.
@@ -48,3 +48,5 @@ This is a web application built with **Nuxt.js (v3)** and **TypeScript**. It pro
   - Adding the `widget.types.googleCalendar` key to `i18n/locales/ja-JP.json`.
 - **Google Calendar Widget Height Adjustment:** The `iframe` within the Google Calendar widget was not respecting its `height` attribute due to conflicting CSS (`height: 100%` and `flex-grow: 1`) in `CalendarWidget.vue`. This was fixed by removing these conflicting styles, allowing the `iframe`'s intrinsic height to be honored.
 - **Google Calendar Dark Mode (Pseudo-Implementation):** Direct dark mode application to the Google Calendar `iframe` is not possible due to browser security policies. A pseudo-dark mode was implemented by applying a CSS `filter: invert(1) hue-rotate(180deg);` to the `iframe` when the application's dark mode is active. This provides a visual dark mode effect, though it may alter the original colors within the calendar content.
+
+検討・コードを生成するときはContext7 MCPで推奨される方法を確認してから行う

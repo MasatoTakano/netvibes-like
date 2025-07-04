@@ -38,9 +38,9 @@
     "button": "ログイン",
     "noAccount": "アカウントをお持ちでないですか？",
     "error": {
-        "Invalid credentials format": "メールアドレスまたはパスワードの形式が正しくありません。",
-        "Incorrect email or password": "メールアドレスまたはパスワードが正しくありません。",
-        "An internal server error occurred": "サーバーエラーが発生しました。"
+      "Invalid credentials format": "メールアドレスまたはパスワードの形式が正しくありません。",
+      "Incorrect email or password": "メールアドレスまたはパスワードが正しくありません。",
+      "An internal server error occurred": "サーバーエラーが発生しました。"
     }
   },
   "logout": {
@@ -66,7 +66,7 @@
     "colorWhiteSmoke": "ホワイトスモーク",
     "colorLinen": "リネン",
     "colorLavender": "ラベンダー",
-    "colorDarkSlateGray": "ダークスレートグレー",
+    "colorDarkSlateGray": "ダークスレートグレー"
   },
   "addWidget": {
     "button": "+ ウィジェット追加",
@@ -88,7 +88,7 @@
   "memoSettings": {
     "title": "メモウィジェット設定",
     "widgetTitle": "タイトル:",
-    "widgetTitlePlaceholder": "メモのタイトル（任意）",
+    "widgetTitlePlaceholder": "メモのタイトル（任意）"
   },
   "rssSettings": {
     "title": "RSSウィジェット設定",

@@ -1,7 +1,6 @@
 // server/api/signup.post.ts
 import { PrismaClient } from '@prisma/client';
 import { hash } from '@node-rs/argon2'; // oslo/password の代わりに Argon2 を直接使う (oslo非推奨化のため)
-import { lucia } from '~/server/utils/auth'; // 先ほど作成した Lucia インスタンス
 import { generateId } from 'lucia'; // ユーザーID生成用
 
 const prisma = new PrismaClient();
@@ -24,7 +23,8 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Invalid email format',
     });
   }
-  if (typeof password !== 'string' || password.length < 8) { // 例: 最低8文字
+  if (typeof password !== 'string' || password.length < 8) {
+    // 例: 最低8文字
     throw createError({
       statusCode: 400,
       statusMessage: 'Password must be at least 8 characters long',
@@ -67,13 +67,13 @@ export default defineEventHandler(async (event) => {
         // デフォルトの Layout と Setting もここで作成できる
         layout: {
           create: {
-            data: JSON.stringify(defaultLayoutData) // デフォルトレイアウト
-          }
+            data: JSON.stringify(defaultLayoutData), // デフォルトレイアウト
+          },
         },
         setting: {
           create: {
-            data: JSON.stringify(defaultSettingsData) // デフォルト設定
-          }
+            data: JSON.stringify(defaultSettingsData), // デフォルト設定
+          },
         },
         // Key情報も作成
         keys: {
@@ -94,7 +94,6 @@ export default defineEventHandler(async (event) => {
     console.log(`User created successfully: ${email}`);
     // サインアップ成功レスポンス (自動ログインさせない場合)
     return { success: true };
-
   } catch (error: any) {
     console.error('Signup error:', error);
 
@@ -114,9 +113,27 @@ export default defineEventHandler(async (event) => {
 // --- デフォルトデータの定義 ---
 // 実際のデフォルト値に置き換えてください
 const defaultLayoutData = [
-  { id: 'pane-1', size: 33.3, widgets: [ /* 初期ウィジェット */ ] },
-  { id: 'pane-2', size: 33.3, widgets: [ /* 初期ウィジェット */ ] },
-  { id: 'pane-3', size: 33.3, widgets: [ /* 初期ウィジェット */ ] },
+  {
+    id: 'pane-1',
+    size: 33.3,
+    widgets: [
+      /* 初期ウィジェット */
+    ],
+  },
+  {
+    id: 'pane-2',
+    size: 33.3,
+    widgets: [
+      /* 初期ウィジェット */
+    ],
+  },
+  {
+    id: 'pane-3',
+    size: 33.3,
+    widgets: [
+      /* 初期ウィジェット */
+    ],
+  },
 ];
 const defaultSettingsData = {
   fontFamily: 'Arial',

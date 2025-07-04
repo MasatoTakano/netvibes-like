@@ -1,6 +1,12 @@
 // server/api/settings.post.ts
-import { defineEventHandler, createError, getCookie, setCookie, readBody } from 'h3';
-import { PrismaClient, Prisma } from '@prisma/client';
+import {
+  defineEventHandler,
+  createError,
+  getCookie,
+  setCookie,
+  readBody,
+} from 'h3';
+import { PrismaClient } from '@prisma/client';
 import { lucia } from '~/server/utils/auth';
 // FontSettings 型をインポート
 import type { FontSettings } from '~/types';
@@ -10,22 +16,25 @@ const prisma = new PrismaClient();
 
 // 設定データの基本的な型チェック (backgroundColor のチェックを削除)
 // Zod などを使うとより厳密にできる
-function isValidFontSettingsData(data: any): data is FontSettings { // 型ガードを使用
-    if (typeof data !== 'object' || data === null) return false;
-    // 必須プロパティの存在と型をチェック
-    if (typeof data.fontFamily !== 'string') return false;
-    if (typeof data.fontSize !== 'number') return false;
-    // backgroundColor のチェックを削除
-    // if (typeof data.backgroundColor !== 'string') return false;
-    // 他に予期しないプロパティがないかチェックするのも良い (オプション)
-    const allowedKeys = ['fontFamily', 'fontSize'];
-    for (const key in data) {
-        if (!allowedKeys.includes(key)) {
-            console.warn(`[API POST /api/settings] Validation: Unexpected key found: ${key}`);
-            // return false; // 厳密にするなら false を返す
-        }
+function isValidFontSettingsData(data: any): data is FontSettings {
+  // 型ガードを使用
+  if (typeof data !== 'object' || data === null) return false;
+  // 必須プロパティの存在と型をチェック
+  if (typeof data.fontFamily !== 'string') return false;
+  if (typeof data.fontSize !== 'number') return false;
+  // backgroundColor のチェックを削除
+  // if (typeof data.backgroundColor !== 'string') return false;
+  // 他に予期しないプロパティがないかチェックするのも良い (オプション)
+  const allowedKeys = ['fontFamily', 'fontSize'];
+  for (const key in data) {
+    if (!allowedKeys.includes(key)) {
+      console.warn(
+        `[API POST /api/settings] Validation: Unexpected key found: ${key}`,
+      );
+      // return false; // 厳密にするなら false を返す
     }
-    return true;
+  }
+  return true;
 }
 
 export default defineEventHandler(async (event) => {
@@ -35,21 +44,37 @@ export default defineEventHandler(async (event) => {
   const sessionId = getCookie(event, lucia.sessionCookieName);
   if (!sessionId) {
     console.log('[API POST /api/settings] No session cookie found.');
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized: No session' });
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized: No session',
+    });
   }
 
-  const { session, user } = await lucia.validateSession(sessionId);
+  const { session } = await lucia.validateSession(sessionId);
 
   if (!session) {
     const sessionCookie = lucia.createBlankSessionCookie();
-    setCookie(event, sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+    setCookie(
+      event,
+      sessionCookie.name,
+      sessionCookie.value,
+      sessionCookie.attributes,
+    );
     console.log('[API POST /api/settings] Invalid session.');
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized: Invalid session' });
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized: Invalid session',
+    });
   }
 
   if (session.fresh) {
     const sessionCookie = lucia.createSessionCookie(session.id);
-    setCookie(event, sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+    setCookie(
+      event,
+      sessionCookie.name,
+      sessionCookie.value,
+      sessionCookie.attributes,
+    );
     console.log('[API POST /api/settings] Session refreshed.');
   }
 
@@ -60,20 +85,36 @@ export default defineEventHandler(async (event) => {
   let fontSettingsData: FontSettings; // 型を FontSettings に変更
   try {
     const rawBody = await readBody(event);
-    console.log(`[API POST /api/settings] Received raw body for user ${userId}:`, rawBody);
+    console.log(
+      `[API POST /api/settings] Received raw body for user ${userId}:`,
+      rawBody,
+    );
 
     // --- 入力データバリデーション ---
-    if (!isValidFontSettingsData(rawBody)) { // 検証関数名を変更
-      console.warn(`[API POST /api/settings] Invalid font settings data received for user ${userId}:`, rawBody);
-      throw createError({ statusCode: 400, statusMessage: 'Bad Request: Invalid font settings data format' });
+    if (!isValidFontSettingsData(rawBody)) {
+      // 検証関数名を変更
+      console.warn(
+        `[API POST /api/settings] Invalid font settings data received for user ${userId}:`,
+        rawBody,
+      );
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Bad Request: Invalid font settings data format',
+      });
     }
     // バリデーションが通れば型が保証される
     fontSettingsData = rawBody;
-
   } catch (readError: any) {
-    console.error(`[API POST /api/settings] Error reading or validating request body for user ${userId}:`, readError);
+    console.error(
+      `[API POST /api/settings] Error reading or validating request body for user ${userId}:`,
+      readError,
+    );
     if (readError.statusCode === 400) throw readError;
-    throw createError({ statusCode: 400, statusMessage: 'Bad Request: Could not read or validate request body', message: readError.message });
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request: Could not read or validate request body',
+      message: readError.message,
+    });
   }
 
   // --- 3. データベースへの保存 ---
@@ -81,23 +122,30 @@ export default defineEventHandler(async (event) => {
     // 受け取った FontSettings データ (JSオブジェクト) をJSON文字列に変換
     // この時点で backgroundColor は含まれていないはず
     const settingsDataString = JSON.stringify(fontSettingsData);
-    console.log(`[API POST /api/settings] Stringified font settings data length for user ${userId}: ${settingsDataString.length}`);
+    console.log(
+      `[API POST /api/settings] Stringified font settings data length for user ${userId}: ${settingsDataString.length}`,
+    );
 
     const upsertResult = await prisma.setting.upsert({
       where: { userId: userId },
       update: { data: settingsDataString },
       create: { userId: userId, data: settingsDataString },
-      select: { updatedAt: true }
+      select: { updatedAt: true },
     });
 
-    console.log(`[API POST /api/settings] Font settings saved successfully for user ${userId}. DB updatedAt: ${upsertResult.updatedAt}`);
+    console.log(
+      `[API POST /api/settings] Font settings saved successfully for user ${userId}. DB updatedAt: ${upsertResult.updatedAt}`,
+    );
     return { success: true };
-
   } catch (dbError: any) {
-    console.error(`[API POST /api/settings] Database error saving font settings for user ${userId}:`, dbError);
+    console.error(
+      `[API POST /api/settings] Database error saving font settings for user ${userId}:`,
+      dbError,
+    );
     throw createError({
       statusCode: 500,
-      statusMessage: 'Internal Server Error: Failed to save font settings state to DB',
+      statusMessage:
+        'Internal Server Error: Failed to save font settings state to DB',
       message: dbError.message,
     });
   }

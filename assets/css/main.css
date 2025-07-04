@@ -2,241 +2,272 @@
 
 /* --- Base Variables (Light Mode - Default) --- */
 :root {
-    /* Colors */
-    --app-bg-color: #ffffff;
-    --app-text-color: #2c3e50;
-    --app-border-color: #eee;
-    --header-bg-color: #f8f9fa;
-    --pane-bg-color: #f0f2f5;
-    --widget-bg-color: #ffffff;
-    --widget-border-color: #e0e0e0;
-    --widget-menu-bg-default: #f8f9fa;
-    --widget-menu-border-default: #e0e0e0;
-    --widget-menu-note-bg: #fffacd;
-    --widget-menu-note-border: #ffe58f;
-    --widget-menu-rss-bg: #e9ecef;
-    --widget-menu-rss-border: #ced4da;
-    --widget-text-color: #333;
-    --link-color: #007bff;
-    --button-primary-bg: #007bff;
-    --button-primary-text: white;
-    --button-primary-border: #007bff;
-    --button-primary-hover-bg: #0056b3;
-    --button-secondary-bg: #6c757d;
-    --button-secondary-text: white;
-    --button-secondary-border: #6c757d;
-    --button-secondary-hover-bg: #5a6268;
-    --input-bg-color: #fff;
-    --input-border-color: #ced4da;
-    --input-text-color: #495057;
-    --splitter-bg-color: #ccc;
-    --splitter-border-color: #eee;
-    --splitter-hover-bg-color: #bbb;
-    --empty-pane-border-color: #ccc;
-    --empty-pane-text-color: #888;
-    --modal-bg-color: #fff;
-    --modal-text-color: #2c3e50;
-    --modal-header-bg: #f8f9fa;
-    --modal-footer-bg: #f8f9fa;
-    --theme-switcher-hover-bg: rgba(128, 128, 128, 0.1); /* ライトモード時のスイッチャーホバー色 */
-  
-    /* Fonts (unchanged between modes usually) */
-    --app-base-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    --app-base-font-size: 14px;
-    --widget-content-font-family: var(--app-base-font-family); /* GlobalSettingsで上書き可能 */
-    --widget-content-font-size: 14px;   /* GlobalSettingsで上書き可能 */
-  }
-  
-  /* --- Dark Mode Variables --- */
-  html[data-theme='dark'] {
-    --app-bg-color: #252526; /* より暗い背景 */
-    --app-text-color: #d4d4d4; /* 明るめのグレーテキスト */
-    --app-border-color: #383838; /* 暗めのボーダー */
-    --header-bg-color: #252526;
-    --pane-bg-color: #202021;
-    --widget-bg-color: #2a2a2b;
-    --widget-border-color: #404040;
-    --widget-menu-bg-default: #333333;
-    --widget-menu-border-default: #484848;
-    --widget-menu-note-bg: #4a4a2a; /* 暗めの黄色 */
-    --widget-menu-note-border: #606035;
-    --widget-menu-rss-bg: #383c40; /* 暗めのグレー */
-    --widget-menu-rss-border: #4d5154;
-    --widget-text-color: #cccccc;
-    --link-color: #58a6ff; /* 明るい青 */
-    --button-primary-bg: #238636; /* GitHub風緑 */
-    --button-primary-text: white;
-    --button-primary-border: #238636;
-    --button-primary-hover-bg: #2ea043;
-    --button-secondary-bg: #30363d; /* GitHub風グレー */
-    --button-secondary-text: #c9d1d9;
-    --button-secondary-border: #30363d;
-    --button-secondary-hover-bg: #404750;
-    --input-bg-color: #212121;
-    --input-border-color: #444;
-    --input-text-color: #d4d4d4;
-    --splitter-bg-color: #444;
-    --splitter-border-color: #555;
-    --splitter-hover-bg-color: #555;
-    --empty-pane-border-color: #555;
-    --empty-pane-text-color: #777;
-    --modal-bg-color: #2a2a2b;
-    --modal-text-color: #d4d4d4;
-    --modal-header-bg: #333333;
-    --modal-footer-bg: #333333;
-    --theme-switcher-hover-bg: rgba(128, 128, 128, 0.2); /* ダークモード時のスイッチャーホバー色 */
-  
-    /* ダークモード時に特定の要素の見た目を調整する場合 */
-    /* 例: 画像を少し暗くする */
-    /* img { filter: brightness(.85); } */
-  }
-  
-  /* --- Apply Variables to Global Elements --- */
-  body {
-    margin: 0;
-    font-family: var(--app-base-font-family);
-    font-size: var(--app-base-font-size);
-    color: var(--app-text-color);
-    background-color: var(--app-bg-color);
-    transition: background-color 0.2s ease-out, color 0.2s ease-out; /* トランジション調整 */
-  }
-  
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-  
-  /* --- Apply Variables to Components (Examples) --- */
-  /* ここで、以前にハードコードされていた色をCSS変数に置き換えます */
-  
-  /* Basic Buttons (from previous refactoring) */
-  .button {
-      font-family: var(--app-base-font-family);
-      font-size: 0.9em;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-  }
-  .button-primary {
-      background-color: var(--button-primary-bg);
-      color: var(--button-primary-text);
-      border-color: var(--button-primary-border);
-  }
-  .button-primary:hover {
-      background-color: var(--button-primary-hover-bg);
-      border-color: var(--button-primary-hover-bg); /* ホバー時もボーダー色を合わせる */
-  }
-  .button-secondary {
-      background-color: var(--button-secondary-bg);
-      color: var(--button-secondary-text);
-      border-color: var(--button-secondary-border);
-  }
-  .button-secondary:hover {
-      background-color: var(--button-secondary-hover-bg);
-      border-color: var(--button-secondary-hover-bg); /* ホバー時もボーダー色を合わせる */
-  }
-  
-  /* Splitpanes splitter */
-  .splitpanes.default-theme .splitpanes__splitter {
-    width: 2px;
-    background-color: var(--splitter-bg-color);
-    border-left: 1px solid var(--splitter-border-color);
-    border-right: 1px solid var(--splitter-border-color);
-    box-sizing: border-box; /* 念のため */
-    transition: background-color 0.2s ease;
-  }
-  .splitpanes.default-theme .splitpanes__splitter:hover {
-      background-color: var(--splitter-hover-bg-color);
-  }
-  .splitpanes.default-theme .splitpanes__splitter:before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 10px;
-      bottom: 10px;
-      width: 1px;
-      background-color: rgba(128, 128, 128, 0.3); /* スプリッターの線の色 */
-      transform: translateX(-50%);
-  }
-  html[data-theme='dark'] .splitpanes.default-theme .splitpanes__splitter:before {
-      background-color: rgba(200, 200, 200, 0.3); /* ダークモードでの線の色 */
-  }
-  
-  
-  /* Modal Styles (Example - adjust selectors based on your modal component) */
-  .modal-backdrop { /* Assuming a class for the overlay */
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-  html[data-theme='dark'] .modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.65);
-  }
-  
-  .modal-container { /* Assuming a class for the main modal box */
-    background-color: var(--modal-bg-color);
-    color: var(--modal-text-color);
-    border: 1px solid var(--app-border-color);
-    border-radius: 6px; /* 例: 少し角丸に */
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  }
-  html[data-theme='dark'] .modal-container {
-     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-  }
-  
-  .modal-header {
-    background-color: var(--modal-header-bg);
-    border-bottom: 1px solid var(--app-border-color);
-    padding: 1rem; /* 例: パディング調整 */
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-  }
-  
-  .modal-body {
-     padding: 1rem; /* 例: パディング調整 */
-  }
-  
-  .modal-footer {
-    background-color: var(--modal-footer-bg);
-    border-top: 1px solid var(--app-border-color);
-    padding: 0.75rem 1rem; /* 例: パディング調整 */
-     border-bottom-left-radius: 6px;
-     border-bottom-right-radius: 6px;
-  }
-  
-  /* Input elements */
-  input[type="text"],
+  /* Colors */
+  --app-bg-color: #ffffff;
+  --app-text-color: #2c3e50;
+  --app-border-color: #eee;
+  --header-bg-color: #f8f9fa;
+  --pane-bg-color: #f0f2f5;
+  --widget-bg-color: #ffffff;
+  --widget-border-color: #e0e0e0;
+  --widget-menu-bg-default: #f8f9fa;
+  --widget-menu-border-default: #e0e0e0;
+  --widget-menu-note-bg: #fffacd;
+  --widget-menu-note-border: #ffe58f;
+  --widget-menu-rss-bg: #e9ecef;
+  --widget-menu-rss-border: #ced4da;
+  --widget-text-color: #333;
+  --link-color: #007bff;
+  --button-primary-bg: #007bff;
+  --button-primary-text: white;
+  --button-primary-border: #007bff;
+  --button-primary-hover-bg: #0056b3;
+  --button-secondary-bg: #6c757d;
+  --button-secondary-text: white;
+  --button-secondary-border: #6c757d;
+  --button-secondary-hover-bg: #5a6268;
+  --input-bg-color: #fff;
+  --input-border-color: #ced4da;
+  --input-text-color: #495057;
+  --splitter-bg-color: #ccc;
+  --splitter-border-color: #eee;
+  --splitter-hover-bg-color: #bbb;
+  --empty-pane-border-color: #ccc;
+  --empty-pane-text-color: #888;
+  --modal-bg-color: #fff;
+  --modal-text-color: #2c3e50;
+  --modal-header-bg: #f8f9fa;
+  --modal-footer-bg: #f8f9fa;
+  --theme-switcher-hover-bg: rgba(
+    128,
+    128,
+    128,
+    0.1
+  ); /* ライトモード時のスイッチャーホバー色 */
+
+  /* Fonts (unchanged between modes usually) */
+  --app-base-font-family:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --app-base-font-size: 14px;
+  --widget-content-font-family: var(
+    --app-base-font-family
+  ); /* GlobalSettingsで上書き可能 */
+  --widget-content-font-size: 14px; /* GlobalSettingsで上書き可能 */
+}
+
+/* --- Dark Mode Variables --- */
+html[data-theme='dark'] {
+  --app-bg-color: #252526; /* より暗い背景 */
+  --app-text-color: #d4d4d4; /* 明るめのグレーテキスト */
+  --app-border-color: #383838; /* 暗めのボーダー */
+  --header-bg-color: #252526;
+  --pane-bg-color: #202021;
+  --widget-bg-color: #2a2a2b;
+  --widget-border-color: #404040;
+  --widget-menu-bg-default: #333333;
+  --widget-menu-border-default: #484848;
+  --widget-menu-note-bg: #4a4a2a; /* 暗めの黄色 */
+  --widget-menu-note-border: #606035;
+  --widget-menu-rss-bg: #383c40; /* 暗めのグレー */
+  --widget-menu-rss-border: #4d5154;
+  --widget-text-color: #cccccc;
+  --link-color: #58a6ff; /* 明るい青 */
+  --button-primary-bg: #238636; /* GitHub風緑 */
+  --button-primary-text: white;
+  --button-primary-border: #238636;
+  --button-primary-hover-bg: #2ea043;
+  --button-secondary-bg: #30363d; /* GitHub風グレー */
+  --button-secondary-text: #c9d1d9;
+  --button-secondary-border: #30363d;
+  --button-secondary-hover-bg: #404750;
+  --input-bg-color: #212121;
+  --input-border-color: #444;
+  --input-text-color: #d4d4d4;
+  --splitter-bg-color: #444;
+  --splitter-border-color: #555;
+  --splitter-hover-bg-color: #555;
+  --empty-pane-border-color: #555;
+  --empty-pane-text-color: #777;
+  --modal-bg-color: #2a2a2b;
+  --modal-text-color: #d4d4d4;
+  --modal-header-bg: #333333;
+  --modal-footer-bg: #333333;
+  --theme-switcher-hover-bg: rgba(
+    128,
+    128,
+    128,
+    0.2
+  ); /* ダークモード時のスイッチャーホバー色 */
+
+  /* ダークモード時に特定の要素の見た目を調整する場合 */
+  /* 例: 画像を少し暗くする */
+  /* img { filter: brightness(.85); } */
+}
+
+/* --- Apply Variables to Global Elements --- */
+body {
+  margin: 0;
+  font-family: var(--app-base-font-family);
+  font-size: var(--app-base-font-size);
+  color: var(--app-text-color);
+  background-color: var(--app-bg-color);
+  transition:
+    background-color 0.2s ease-out,
+    color 0.2s ease-out; /* トランジション調整 */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* --- Apply Variables to Components (Examples) --- */
+/* ここで、以前にハードコードされていた色をCSS変数に置き換えます */
+
+/* Basic Buttons (from previous refactoring) */
+.button {
+  font-family: var(--app-base-font-family);
+  font-size: 0.9em;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.button-primary {
+  background-color: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  border-color: var(--button-primary-border);
+}
+.button-primary:hover {
+  background-color: var(--button-primary-hover-bg);
+  border-color: var(
+    --button-primary-hover-bg
+  ); /* ホバー時もボーダー色を合わせる */
+}
+.button-secondary {
+  background-color: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  border-color: var(--button-secondary-border);
+}
+.button-secondary:hover {
+  background-color: var(--button-secondary-hover-bg);
+  border-color: var(
+    --button-secondary-hover-bg
+  ); /* ホバー時もボーダー色を合わせる */
+}
+
+/* Splitpanes splitter */
+.splitpanes.default-theme .splitpanes__splitter {
+  width: 2px;
+  background-color: var(--splitter-bg-color);
+  border-left: 1px solid var(--splitter-border-color);
+  border-right: 1px solid var(--splitter-border-color);
+  box-sizing: border-box; /* 念のため */
+  transition: background-color 0.2s ease;
+}
+.splitpanes.default-theme .splitpanes__splitter:hover {
+  background-color: var(--splitter-hover-bg-color);
+}
+.splitpanes.default-theme .splitpanes__splitter:before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background-color: rgba(128, 128, 128, 0.3); /* スプリッターの線の色 */
+  transform: translateX(-50%);
+}
+html[data-theme='dark'] .splitpanes.default-theme .splitpanes__splitter:before {
+  background-color: rgba(200, 200, 200, 0.3); /* ダークモードでの線の色 */
+}
+
+/* Modal Styles (Example - adjust selectors based on your modal component) */
+.modal-backdrop {
+  /* Assuming a class for the overlay */
+  background-color: rgba(0, 0, 0, 0.5);
+}
+html[data-theme='dark'] .modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.65);
+}
+
+.modal-container {
+  /* Assuming a class for the main modal box */
+  background-color: var(--modal-bg-color);
+  color: var(--modal-text-color);
+  border: 1px solid var(--app-border-color);
+  border-radius: 6px; /* 例: 少し角丸に */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+html[data-theme='dark'] .modal-container {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+.modal-header {
+  background-color: var(--modal-header-bg);
+  border-bottom: 1px solid var(--app-border-color);
+  padding: 1rem; /* 例: パディング調整 */
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.modal-body {
+  padding: 1rem; /* 例: パディング調整 */
+}
+
+.modal-footer {
+  background-color: var(--modal-footer-bg);
+  border-top: 1px solid var(--app-border-color);
+  padding: 0.75rem 1rem; /* 例: パディング調整 */
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+/* Input elements */
+input[type="text"],
   input[type="url"],
   input[type="number"],
   input[type="email"], /* Add other input types as needed */
   textarea,
   select {
-      background-color: var(--input-bg-color);
-      border: 1px solid var(--input-border-color);
-      color: var(--input-text-color);
-      padding: 8px 10px;
-      border-radius: 4px;
-      transition: border-color 0.2s ease, background-color 0.2s ease;
-  }
-  input[type="text"]:focus,
-  input[type="url"]:focus,
-  input[type="number"]:focus,
-  input[type="email"]:focus,
-  textarea:focus,
-  select:focus {
-      outline: none;
-      border-color: var(--link-color); /* フォーカス時にリンク色に */
-      box-shadow: 0 0 0 2px rgba(var(--link-color-rgb), 0.2); /* フォーカスリング (rgb変数が必要) */
-  }
-  /* Define --link-color-rgb for focus ring */
-  :root { --link-color-rgb: 0, 123, 255; }
-  html[data-theme='dark'] { --link-color-rgb: 88, 166, 255; }
-  
-  
-  /* Ensure components use variables */
-  /* Check and update styles in: */
-  /* - pages/index.vue <style scoped> */
-  /* - components/WidgetCard.vue <style scoped> */
-  /* - components/MemoNote.vue <style scoped> (if it exists) */
-  /* - components/RssReader.vue <style scoped> (if it exists) */
-  /* - All Modal components <style scoped> */
-  /* Replace hardcoded colors (#fff, #000, #eee etc.) with var(--variable-name) */
+  background-color: var(--input-bg-color);
+  border: 1px solid var(--input-border-color);
+  color: var(--input-text-color);
+  padding: 8px 10px;
+  border-radius: 4px;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+input[type='text']:focus,
+input[type='url']:focus,
+input[type='number']:focus,
+input[type='email']:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--link-color); /* フォーカス時にリンク色に */
+  box-shadow: 0 0 0 2px rgba(var(--link-color-rgb), 0.2); /* フォーカスリング (rgb変数が必要) */
+}
+/* Define --link-color-rgb for focus ring */
+:root {
+  --link-color-rgb: 0, 123, 255;
+}
+html[data-theme='dark'] {
+  --link-color-rgb: 88, 166, 255;
+}
+
+/* Ensure components use variables */
+/* Check and update styles in: */
+/* - pages/index.vue <style scoped> */
+/* - components/WidgetCard.vue <style scoped> */
+/* - components/MemoNote.vue <style scoped> (if it exists) */
+/* - components/RssReader.vue <style scoped> (if it exists) */
+/* - All Modal components <style scoped> */
+/* Replace hardcoded colors (#fff, #000, #eee etc.) with var(--variable-name) */

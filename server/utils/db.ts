@@ -7,7 +7,7 @@ import { DEFAULT_GLOBAL_SETTINGS } from '~/constants';
 
 // デフォルト設定値
 const defaultGlobalSettings: GlobalSettings = {
-  ...DEFAULT_GLOBAL_SETTINGS
+  ...DEFAULT_GLOBAL_SETTINGS,
 };
 
 // Define the path for the database file within the project structure
@@ -23,7 +23,9 @@ let db: Database.Database;
 export function getDb() {
   if (!db) {
     console.log(`Connecting to database at: ${dbPath}`);
-    db = new Database(dbPath, { /* verbose: console.log */ }); // Enable verbose for debugging if needed
+    db = new Database(dbPath, {
+      /* verbose: console.log */
+    }); // Enable verbose for debugging if needed
     // Enable WAL mode for better concurrency (optional but recommended)
     db.pragma('journal_mode = WAL');
     initializeDbSchema(db);
@@ -52,7 +54,9 @@ function initializeDbSchema(dbInstance: Database.Database) {
   createTriggerStmt.run();
 
   // Check if the initial row exists
-  const checkRowStmt = dbInstance.prepare('SELECT id FROM layout_state WHERE id = 1');
+  const checkRowStmt = dbInstance.prepare(
+    'SELECT id FROM layout_state WHERE id = 1',
+  );
   const rowExists = checkRowStmt.get();
 
   // If the row doesn't exist, insert an empty state (or a default state)
@@ -63,11 +67,10 @@ function initializeDbSchema(dbInstance: Database.Database) {
       `);
     // Insert an empty array as the initial state JSON, or use default data if preferred
     insertStmt.run(JSON.stringify([]));
-    console.log("Initialized layout_state row with id=1.");
+    console.log('Initialized layout_state row with id=1.');
   }
 
-
-  console.log("Database schema initialized.");
+  console.log('Database schema initialized.');
 }
 
 // 全体設定スキーマ初期化関数
@@ -92,9 +95,10 @@ function initializeGlobalSettingsSchema(dbInstance: Database.Database) {
   `);
   createTriggerStmt.run();
 
-
   // ID=1 の行が存在しない場合にデフォルト設定を挿入
-  const checkRowStmt = dbInstance.prepare('SELECT id FROM global_settings WHERE id = 1');
+  const checkRowStmt = dbInstance.prepare(
+    'SELECT id FROM global_settings WHERE id = 1',
+  );
   const rowExists = checkRowStmt.get();
   if (!rowExists) {
     const insertStmt = dbInstance.prepare(`
@@ -102,10 +106,12 @@ function initializeGlobalSettingsSchema(dbInstance: Database.Database) {
       ON CONFLICT(id) DO NOTHING
     `);
     insertStmt.run(JSON.stringify(defaultGlobalSettings)); // ★ デフォルト設定を使う
-    console.log("Initialized global_settings row with id=1 and default settings.");
+    console.log(
+      'Initialized global_settings row with id=1 and default settings.',
+    );
   }
 
-  console.log("Global settings Database schema initialized.");
+  console.log('Global settings Database schema initialized.');
 }
 
 // レイアウト状態を保存する関数
@@ -122,17 +128,17 @@ export function saveLayoutState(state: PaneData[]): void {
       `);
     const info = stmt.run(stateJson);
     if (info.changes > 0) {
-      console.log("Layout state saved to DB.");
+      console.log('Layout state saved to DB.');
     } else {
       // This might happen if the row id=1 was somehow deleted after init.
       // Optionally, try inserting again.
-      console.warn("Layout state update affected 0 rows. Attempting insert...");
+      console.warn('Layout state update affected 0 rows. Attempting insert...');
       const insertStmt = dbInstance.prepare(`
             INSERT INTO layout_state (id, state_json) VALUES (1, ?)
             ON CONFLICT(id) DO UPDATE SET state_json = excluded.state_json, updated_at = CURRENT_TIMESTAMP
           `);
       insertStmt.run(stateJson);
-      console.log("Layout state inserted/updated via fallback.");
+      console.log('Layout state inserted/updated via fallback.');
     }
   } catch (error: any) {
     console.error('Error saving layout state:', error);
@@ -145,22 +151,27 @@ export function saveLayoutState(state: PaneData[]): void {
 export function loadGlobalSettings(): GlobalSettings {
   const dbInstance = getDb();
   try {
-    const stmt = dbInstance.prepare('SELECT settings_json FROM global_settings WHERE id = 1');
+    const stmt = dbInstance.prepare(
+      'SELECT settings_json FROM global_settings WHERE id = 1',
+    );
     const result = stmt.get() as { settings_json: string } | undefined;
 
     if (result?.settings_json) {
-      console.log("Global settings loaded from DB.");
+      console.log('Global settings loaded from DB.');
       // JSON をパースして返す。失敗したらデフォルトを返す
       try {
         const parsedSettings = JSON.parse(result.settings_json);
         // デフォルト設定とマージして、不足しているキーがあれば補完する
         return { ...defaultGlobalSettings, ...parsedSettings };
       } catch (parseError) {
-        console.error("Error parsing global settings JSON from DB, returning default.", parseError);
+        console.error(
+          'Error parsing global settings JSON from DB, returning default.',
+          parseError,
+        );
         return defaultGlobalSettings;
       }
     } else {
-      console.log("No global settings found in DB, returning default.");
+      console.log('No global settings found in DB, returning default.');
       return defaultGlobalSettings; // DBにデータがなければデフォルトを返す
     }
   } catch (error) {
@@ -182,16 +193,18 @@ export function saveGlobalSettings(settings: GlobalSettings): void {
     `);
     const info = stmt.run(settingsJson);
     if (info.changes > 0) {
-      console.log("Global settings saved to DB.");
+      console.log('Global settings saved to DB.');
     } else {
       // 念のため、更新できなかった場合のフォールバック (INSERT OR REPLACE)
-      console.warn("Global settings update affected 0 rows. Attempting insert/replace...");
+      console.warn(
+        'Global settings update affected 0 rows. Attempting insert/replace...',
+      );
       const upsertStmt = dbInstance.prepare(`
-            INSERT INTO global_settings (id, settings_json) VALUES (1, ?)
+            INSERT INTO global_settings (id, settings_json) VALUES (1, ?)n
             ON CONFLICT(id) DO UPDATE SET settings_json = excluded.settings_json, updated_at = CURRENT_TIMESTAMP
         `);
       upsertStmt.run(settingsJson);
-      console.log("Global settings upserted via fallback.");
+      console.log('Global settings upserted via fallback.');
     }
   } catch (error: any) {
     console.error('Error saving global settings:', error);
@@ -203,3 +216,34 @@ export function saveGlobalSettings(settings: GlobalSettings): void {
 // process.on('exit', () => db?.close());
 // process.on('SIGINT', () => db?.close());
 // process.on('SIGTERM', () => db?.close());
+
+// レイアウト状態を読み込む関数
+export function loadLayoutState(): PaneData[] {
+  const dbInstance = getDb();
+  try {
+    const stmt = dbInstance.prepare(
+      'SELECT state_json FROM layout_state WHERE id = 1',
+    );
+    const result = stmt.get() as { state_json: string } | undefined;
+
+    if (result?.state_json) {
+      console.log('Layout state loaded from DB.');
+      // JSON をパースして返す。失敗したら空の配列を返す
+      try {
+        return JSON.parse(result.state_json);
+      } catch (parseError) {
+        console.error(
+          'Error parsing layout state JSON from DB, returning empty array.',
+          parseError,
+        );
+        return [];
+      }
+    } else {
+      console.log('No layout state found in DB, returning empty array.');
+      return []; // DBにデータがなければ空の配列を返す
+    }
+  } catch (error) {
+    console.error('Error loading layout state:', error);
+    return []; // エラー時も空の配列を返す
+  }
+}

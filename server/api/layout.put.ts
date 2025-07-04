@@ -27,7 +27,6 @@ export default defineEventHandler(async (event) => {
 
     console.log(`Layout state saved successfully. Changes: ${info.changes}`);
     return { success: true, message: 'Layout saved.' };
-
   } catch (error: any) {
     console.error('Error saving layout state:', error);
     // Throw an error that Nuxt can handle

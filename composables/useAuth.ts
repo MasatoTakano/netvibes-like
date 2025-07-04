@@ -11,7 +11,6 @@ export interface User {
   name: string | null;
 }
 
-
 export const useAuth = () => {
   // useState はプラグインで設定された値を取得するだけ
   const user = useState<User | null>('user');
@@ -32,7 +31,6 @@ export const useAuth = () => {
       user.value = null;
     }
   };
-
 
   const logout = async () => {
     try {

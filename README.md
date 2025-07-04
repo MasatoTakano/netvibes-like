@@ -4,16 +4,16 @@ This is a web application built with Nuxt.js (v3) and TypeScript, providing a cu
 
 ## Features
 
--   **Widget-based Dashboard:** Create and manage a personalized dashboard with various widgets.
--   **User Authentication:** Secure user authentication powered by Lucia Auth.
--   **Layout Persistence:** User-specific widget layouts are saved and loaded.
--   **Multiple Widget Types:** Includes Memo/Note, RSS Reader, and Google Calendar widgets.
+- **Widget-based Dashboard:** Create and manage a personalized dashboard with various widgets.
+- **User Authentication:** Secure user authentication powered by Lucia Auth.
+- **Layout Persistence:** User-specific widget layouts are saved and loaded.
+- **Multiple Widget Types:** Includes Memo/Note, RSS Reader, and Google Calendar widgets.
 
 ## Technologies
 
--   **Frontend:** Nuxt.js (Vue.js 3), TypeScript, `splitpanes`, `vuedraggable`, `@nuxtjs/i18n`
--   **Backend:** Nuxt.js server routes, Prisma (ORM), Lucia Auth
--   **Database:** Configured via Prisma (e.g., SQLite, PostgreSQL)
+- **Frontend:** Nuxt.js (Vue.js 3), TypeScript, `splitpanes`, `vuedraggable`, `@nuxtjs/i18n`
+- **Backend:** Nuxt.js server routes, Prisma (ORM), Lucia Auth
+- **Database:** Configured via Prisma (e.g., SQLite, PostgreSQL)
 
 ## Setup
 
@@ -49,3 +49,4 @@ Build the application for production:
 ```bash
 # npm or yarn or bun
 npm run build
+```

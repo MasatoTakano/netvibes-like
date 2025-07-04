@@ -24,14 +24,16 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         // console.log('[Auth Plugin - Server] No cookie header found in incoming request.');
       }
     } else {
-      console.warn('[Auth Plugin - Server] Could not get event from ssrContext to forward cookie.');
+      console.warn(
+        '[Auth Plugin - Server] Could not get event from ssrContext to forward cookie.',
+      );
     }
 
     try {
       // /api/user を直接呼び出し、取得した Cookie ヘッダーを渡す
       const data = await $fetch<{ user: User | null }>('/api/user', {
-          headers: headers, // ★ Cookie を含むヘッダーを渡す
-          // ignoreResponseError: true // 401エラーなどをキャッチするため (任意)
+        headers: headers, // ★ Cookie を含むヘッダーを渡す
+        // ignoreResponseError: true // 401エラーなどをキャッチするため (任意)
       });
       // 取得したユーザー情報で useState を直接更新
       userState.value = data.user;
@@ -39,9 +41,9 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     } catch (error: any) {
       // 401 Unauthorized などのエラーは正常なケース（未ログイン）もある
       if (error.statusCode !== 401) {
-         console.error('[Auth Plugin - Server] Failed to fetch user:', error);
+        console.error('[Auth Plugin - Server] Failed to fetch user:', error);
       } else {
-         // console.log('[Auth Plugin - Server] User is not authenticated (401).');
+        // console.log('[Auth Plugin - Server] User is not authenticated (401).');
       }
       userState.value = null; // エラー時や未認証時は null
     }

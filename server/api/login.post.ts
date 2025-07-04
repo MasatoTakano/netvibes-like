@@ -2,18 +2,8 @@
 import { PrismaClient } from '@prisma/client';
 import { verify } from '@node-rs/argon2'; // パスワード検証用
 import { lucia } from '~/server/utils/auth'; // Lucia インスタンス
-import type { User as LuciaUser } from 'lucia';
 
 const prisma = new PrismaClient();
-
-interface LoginSuccessResponse {
-  success: true;
-  user: {
-    userId: string;
-    email: string;
-    name: string | null;
-  };
-}
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -67,16 +57,24 @@ export default defineEventHandler(async (event) => {
 
     // --- セッション Cookie の作成と設定 ---
     const sessionCookie = lucia.createSessionCookie(session.id);
-    setCookie(event, sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+    setCookie(
+      event,
+      sessionCookie.name,
+      sessionCookie.value,
+      sessionCookie.attributes,
+    );
 
     const validatedUser = await prisma.user.findUnique({
       where: { id: key.userId },
-      select: { id: true, email: true, name: true } // 必要な情報だけ取得
+      select: { id: true, email: true, name: true }, // 必要な情報だけ取得
     });
 
     if (!validatedUser) {
       // 通常は key があれば user も存在するはずだが念のため
-      throw createError({ statusCode: 500, statusMessage: 'Could not retrieve user data after login' });
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Could not retrieve user data after login',
+      });
     }
 
     console.log(`Login successful, session created for user: ${key.userId}`);
@@ -87,7 +85,7 @@ export default defineEventHandler(async (event) => {
         userId: validatedUser.id,
         email: validatedUser.email,
         name: validatedUser.name,
-      }
+      },
     };
   } catch (error: any) {
     console.error('Login error:', error);

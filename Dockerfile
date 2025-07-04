@@ -20,6 +20,7 @@ RUN npx prisma generate
 RUN rm .env.build-tmp
 
 COPY . .
+
 RUN npm run build
 
 # --- 実行ステージ ---
