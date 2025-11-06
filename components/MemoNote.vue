@@ -65,22 +65,36 @@
   // ↓↓↓ 通常表示用のリンク化されたコンテンツ (computed) ↓↓↓
   const linkedContentHtml = computed(() => {
     // props.content を linkifyUrls で処理し、改行を <br> に変換
-    const linked = linkifyUrls(props.content);
+    const linked = linkifyUrls(props.content, true);
     return linked;
   });
 
   // --- Methods ---
-  const linkifyUrls = (text: string): string => {
+  const shortenUrl = (url: string): string => {
+    if (url.length <= 60) return url;
+    
+    try {
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname;
+      const lastChars = url.slice(-10);
+      return `${urlObj.protocol}//${domain}/.../${lastChars}`;
+    } catch {
+      // フォールバック：単純に60文字で切り捨て
+      return url.slice(0, 60) + '...';
+    }
+  };
+
+  const linkifyUrls = (text: string, shouldShorten: boolean = false): string => {
     if (!text) return '';
-    // URLを検出する正規表現 (より複雑なパターンも可能)
-    // 参考: https://urlregex.com/ (ただし完璧な正規表現は難しい)
+    // URLを検出する正規表現 - パーセントエンコードされた文字も含めるように改良
     const urlRegex =
       /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
     // HTMLエスケープをしてからURLをリンクに置換
     const escapedText = escapeHtml(text);
     return escapedText.replace(urlRegex, (url) => {
       // target="_blank" と rel を追加
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+      const displayText = shouldShorten ? shortenUrl(url) : url;
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${displayText}</a>`;
     });
   };
 
@@ -90,7 +104,7 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
+      .replace(/'/g, '&#039;');
   };
 
   watch(
