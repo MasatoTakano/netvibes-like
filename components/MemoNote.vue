@@ -37,6 +37,8 @@
     fontSize: { type: Number, default: null }, // デフォルト値
   });
 
+  const urlCutoffLength = 40;
+
   // --- Emits ---
   const emit = defineEmits(['update:content']);
 
@@ -71,7 +73,7 @@
 
   // --- Methods ---
   const shortenUrl = (url: string): string => {
-    if (url.length <= 60) return url;
+    if (url.length <= urlCutoffLength) return url;
     
     try {
       const urlObj = new URL(url);
