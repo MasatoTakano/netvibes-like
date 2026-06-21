@@ -1,10 +1,8 @@
 // composables/useAuth.ts
-import { useState } from '#app'; // ★ 再度追加 (または確認)
-import { computed } from 'vue'; // ★ 再度追加 (または確認)
-import { navigateTo } from '#app'; // navigateTo は必要
-// $fetch や useRouter は logout で使うなら必要
+import { useState, navigateTo } from '#app';
+import { computed } from 'vue';
 
-// User 型定義 (ここか別の型ファイルで)
+// User 型定義
 export interface User {
   userId: string;
   email: string;

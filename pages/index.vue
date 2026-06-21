@@ -173,29 +173,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted, watch, reactive, computed, watchEffect } from 'vue';
+  import { onMounted } from 'vue';
   import { Splitpanes, Pane } from 'splitpanes';
   import draggable from 'vuedraggable';
-  import type {
-    PaneData,
-    NoteWidget,
-    RssWidget,
-    CalendarWidget,
-    GlobalSettings,
-    RssSettingsPayload,
-    MemoSettingsPayload,
-    CalendarSettingsPayload,
-  } from '~/types';
-  import {
-    DEFAULT_GLOBAL_SETTINGS,
-    AVAILABLE_FONTS,
-    DEFAULT_NOTE_FONT_FAMILY,
-    DEFAULT_NOTE_FONT_SIZE,
-    DEFAULT_RSS_FONT_FAMILY,
-    DEFAULT_RSS_FONT_SIZE,
-    DEFAULT_RSS_ITEM_COUNT,
-    DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
-  } from '~/constants';
+  import { AVAILABLE_FONTS } from '~/constants';
   import RssSettingsModal from '~/components/RssSettingsModal.vue';
   import MemoSettingsModal from '~/components/MemoSettingsModal.vue';
   import CalendarSettingsModal from '~/components/CalendarSettingsModal.vue';
@@ -206,594 +187,76 @@
   import ThemeSwitcher from '~/components/ThemeSwitcher.vue';
   import WidgetCard from '~/components/WidgetCard.vue';
 
+  const { t } = useI18n();
   const { user, isLoggedIn, logout } = useAuth();
 
-  const { t } = useI18n();
+  // --- Layout: レイアウトCRUD + ウィジェット操作 ---
+  const {
+    panesData,
+    isLoading,
+    splitpanesKey,
+    loadLayout,
+    saveLayoutDebounced,
+    addNoteWidget,
+    addRssWidget,
+    addCalendarWidget,
+    removeWidget,
+    updateNoteContent,
+    updateRssWidgetTitle,
+    toggleCollapse,
+    handleDragChange,
+  } = useLayout();
 
-  // --- デフォルトの初期データ ---
-  const defaultPanesData: PaneData[] = [
-    { id: 'pane-1', size: 33.3, widgets: [] },
-    { id: 'pane-2', size: 33.4, widgets: [] },
-    { id: 'pane-3', size: 33.3, widgets: [] },
-  ];
+  // --- Global Settings: フォント設定 + CSS変数 ---
+  const { globalSettings, globalStyles, loadGlobalSettings, saveGlobalSettingsDebounced } =
+    useGlobalSettings();
 
-  // 初期値は空配列にしておき、マウント後にAPIからロードする
-  const panesData = ref<PaneData[]>([]);
-  const isLoading = ref(true); // ローディング状態を追加
-  const isSplitpanesReady = ref(false); // splitpanesの@readyが発火したか
-  const allowPaneResizeHandling = ref(false); // resizedイベントの処理を許可するか
-  const splitpanesKey = ref(0); // splitpanesのキー (強制的に再レンダリングするために使用)
-  const isSaving = ref(false); // 保存中の状態を示すフラグ
-  const saveError = ref<string | null>(null); // 保存エラーメッセージ
-
-  // --- State ---
-  const activeModal = ref<
-    'rss' | 'memo' | 'global' | 'add' | 'delete' | 'calendar' | null
-  >(null);
-  const editingWidgetData = ref<NoteWidget | RssWidget | CalendarWidget | null>(
-    null,
-  );
-  const editingPaneId = ref<string | null>(null);
-  const widgetToDelete = ref<{
-    widgetId: string;
-    paneId: string;
-    description: string;
-  } | null>(null);
-
-  // 全体設定用の状態
-  const globalSettings = reactive({
-    fontFamily: DEFAULT_GLOBAL_SETTINGS.fontFamily,
-    fontSize: DEFAULT_GLOBAL_SETTINGS.fontSize,
+  // --- Pane Resize: splitpanes連動 ---
+  const { handlePaneReady, handlePaneResize } = usePaneResize({
+    panesData,
+    isLoading,
+    saveLayoutDebounced,
   });
 
-  // フォントリスト
-  const availableFonts = ref<Readonly<string[]>>(AVAILABLE_FONTS);
-
-  // --- Watcher for Global Settings ---
-  // globalSettings の変更を監視し、:root の CSS 変数を直接更新する
-  watchEffect(() => {
-    if (process.client) {
-      // ルートエレメントのスタイルを取得
-      const rootStyle = document.documentElement.style;
-
-      // ウィジェットコンテンツ用の変数を更新
-      rootStyle.setProperty(
-        '--widget-content-font-family',
-        globalSettings.fontFamily,
-      );
-      rootStyle.setProperty(
-        '--widget-content-font-size',
-        `${globalSettings.fontSize}px`,
-      );
-    }
+  // --- Widget Modal: モーダル管理 + 設定保存 ---
+  const {
+    activeModal,
+    editingWidgetData,
+    editingPaneId,
+    widgetToDelete,
+    openAddWidgetMenu: openAddWidgetMenuForFirstPane,
+    openSettingsModal,
+    openGlobalSettingsModal,
+    closeModal,
+    handleAddWidget,
+    confirmRemoveWidget,
+    handleConfirmDelete,
+    handleSaveRssSettings,
+    handleSaveMemoSettings,
+    handleSaveCalendarSettings,
+    handleSaveGlobalSettings,
+  } = useWidgetModal({
+    panesData,
+    saveLayoutDebounced,
+    addNoteWidget,
+    addRssWidget,
+    addCalendarWidget,
+    removeWidget,
+    globalSettings,
+    saveGlobalSettingsDebounced,
+    t,
   });
 
-  watch([isLoading, isSplitpanesReady], ([loading, ready]) => {
-    if (!loading && ready) {
-      // DBロード完了 かつ splitpanes準備完了
-      // 少し遅延させてから resized イベントの処理を許可する
-      // これにより、初期化直後の自動発火をやり過ごす
-      setTimeout(() => {
-        allowPaneResizeHandling.value = true;
-      }, 500); // 500msの遅延
-    }
-  });
+  const availableFonts = AVAILABLE_FONTS;
 
-  // --- Computed ---
-  // 全体スタイルを適用するための computed プロパティ
-  const globalStyles = computed(() => ({
-    '--global-font-family': globalSettings.fontFamily,
-    '--global-font-size': `${globalSettings.fontSize}px`,
-  }));
-
-  // --- Debounce 関数 ---
-  // (waitミリ秒待ってから関数を実行。待機中に再度呼び出されるとタイマーリセット)
-  function debounce<T extends (...args: any[]) => any>(
-    func: T,
-    wait: number,
-  ): (...args: Parameters<T>) => void {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
-      const context = this;
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => {
-        func.apply(context, args);
-        timeoutId = null;
-      }, wait);
-    };
-  }
-
-  // --- APIからデータをロード ---
+  // --- onMounted: データロード ---
   onMounted(async () => {
-    isLoading.value = true; // データロード開始
-    allowPaneResizeHandling.value = false; // 初期はリサイズ処理を許可しない
-
-    // 1. グローバル設定のロード
-    try {
-      const savedSettings = await $fetch<GlobalSettings>('/api/settings');
-      if (savedSettings) Object.assign(globalSettings, savedSettings);
-      console.log('>>> [onMounted] Global settings loaded.');
-    } catch (err) {
-      console.error(
-        '>>> [ERROR] [onMounted] Failed to load global settings:',
-        err,
-      );
-    }
-
-    // 2. レイアウトデータのロード
-    try {
-      const loadedPanesRaw = await $fetch<PaneData[]>('/api/layout');
-
-      let panesToApply: PaneData[];
-
-      if (
-        loadedPanesRaw &&
-        Array.isArray(loadedPanesRaw) &&
-        loadedPanesRaw.length > 0
-      ) {
-        const isValidStructure = loadedPanesRaw.every(
-          (p) =>
-            p &&
-            typeof p.id === 'string' &&
-            typeof p.size === 'number' &&
-            Array.isArray(p.widgets),
-        );
-        if (isValidStructure) {
-          panesToApply = JSON.parse(JSON.stringify(loadedPanesRaw)); // コピーを作成
-
-          // 正規化処理
-          const totalSize = panesToApply.reduce(
-            (sum, pane) => sum + (pane.size || 0),
-            0,
-          );
-          if (totalSize > 0 && Math.abs(totalSize - 100) > 0.1) {
-            const factor = 100 / totalSize;
-            panesToApply.forEach((pane) => {
-              if (typeof pane.size === 'number') pane.size = pane.size * factor;
-            });
-          }
-        } else {
-          panesToApply = JSON.parse(JSON.stringify(defaultPanesData));
-        }
-      } else {
-        panesToApply = JSON.parse(JSON.stringify(defaultPanesData));
-      }
-      panesData.value = panesToApply;
-      splitpanesKey.value++; // splitpanesの再レンダリングを強制するためにキーを更新
-    } catch (error) {
-      panesData.value = JSON.parse(JSON.stringify(defaultPanesData)); // エラー時もデフォルト
-    } finally {
-      isLoading.value = false; // データロード完了 (成功・失敗問わず)
-    }
+    await loadGlobalSettings();
+    await loadLayout();
   });
-
-  // レイアウト保存処理 (Debounce化)
-  const saveLayoutDebounced = debounce(async () => {
-    if (isLoading.value || panesData.value.length === 0) {
-      return;
-    }
-
-    // 保存前にサイズ合計が100%に近いか確認・調整（念のため残しておく）
-    const totalSize = panesData.value.reduce((sum, pane) => sum + pane.size, 0);
-    if (Math.abs(totalSize - 100) > 0.1) {
-      const factor = 100 / totalSize;
-      panesData.value.forEach((pane) => {
-        pane.size = pane.size * factor;
-      });
-    }
-
-    isSaving.value = true;
-    saveError.value = null;
-
-    try {
-      await $fetch('/api/layout', {
-        method: 'POST',
-        body: panesData.value,
-      });
-    } catch (err: any) {
-      console.error('>>> [ERROR] [Client] Failed to save layout via API:', err);
-      saveError.value =
-        err.data?.message || err.message || 'Failed to save layout.';
-    } finally {
-      isSaving.value = false;
-    }
-  }, 1500);
-
-  // 全体設定保存処理 (Debounce化)
-  const saveGlobalSettingsDebounced = debounce(async () => {
-    try {
-      await $fetch('/api/settings', { method: 'POST', body: globalSettings });
-    } catch (err: any) {
-      // エラー処理
-      console.error(
-        '>>> [ERROR] [Client] Failed to save global settings via API:',
-        err,
-      );
-    }
-  }, 500);
-
-  // --- Methods ---
-  // Splitpanesの準備完了イベントハンドラ
-  const handlePaneReady = () => {
-    isSplitpanesReady.value = true;
-  };
-
-  // Splitpanesのリサイズイベントハンドラ
-  const handlePaneResize = (eventPayload: {
-    panes: Array<{ min: number; max: number; size: number }>;
-    [key: string]: any;
-  }) => {
-    const resizedPanes = eventPayload.panes;
-
-    if (!allowPaneResizeHandling.value) {
-      return;
-    }
-
-    if (isLoading.value) {
-      return;
-    }
-
-    if (
-      resizedPanes &&
-      Array.isArray(resizedPanes) &&
-      resizedPanes.length === panesData.value.length
-    ) {
-      let sizesChanged = false;
-      panesData.value.forEach((pane, index) => {
-        const newSize = resizedPanes[index]?.size;
-        if (newSize !== undefined && Math.abs(pane.size - newSize) > 0.01) {
-          pane.size = newSize;
-          sizesChanged = true;
-        }
-      });
-
-      if (sizesChanged) {
-        saveLayoutDebounced();
-      }
-    }
-  };
-
-  // RSSウィジェット更新処理
-  const updateRssWidgetTitle = (
-    widgetId: string,
-    paneId: string,
-    newTitle: string,
-  ) => {
-    if (isLoading.value) {
-      return;
-    }
-
-    const pane = panesData.value.find((p) => p.id === paneId);
-    const widget = pane?.widgets.find(
-      (w) => w.id === widgetId && w.type === 'rss',
-    ) as RssWidget | undefined;
-    if (widget && widget.feedTitle !== newTitle) {
-      widget.feedTitle = newTitle;
-      saveLayoutDebounced();
-    }
-  };
-
-  // メモウィジェット更新処理
-  const updateNoteContent = (widgetId: string, newContent: string): void => {
-    if (isLoading.value) {
-      return;
-    }
-
-    let found = false;
-    for (const pane of panesData.value) {
-      const widgetIndex = pane.widgets.findIndex(
-        (widget) => widget.id === widgetId && widget.type === 'note',
-      );
-      if (widgetIndex !== -1) {
-        (pane.widgets[widgetIndex] as NoteWidget).content = newContent;
-        found = true;
-        break;
-      }
-    }
-    if (found) {
-      // メモ内容変更後も保存
-      saveLayoutDebounced();
-    } else {
-      console.warn(
-        `>>> 「ERROR] [Client] Attempted to update note with unknown id: ${widgetId}`,
-      );
-    }
-  };
-
-  // 「+ Add Widget」ボタンクリック時の処理
-  const openAddWidgetMenuForFirstPane = () => {
-    activeModal.value = 'add';
-  };
-
-  // ウィジェット追加処理
-  const handleAddWidget = (payload: {
-    type: 'note' | 'rss' | 'calendar';
-    feedUrl?: string;
-  }) => {
-    if (panesData.value.length > 0) {
-      // 最初のペインIDを取得
-      const firstPaneId = panesData.value[0].id;
-
-      if (payload.type === 'note') {
-        addMemoWidgetInternal(firstPaneId);
-      } else if (payload.type === 'rss' && payload.feedUrl) {
-        addRssWidgetInternal(
-          firstPaneId,
-          payload.feedUrl,
-          DEFAULT_RSS_ITEM_COUNT,
-        );
-      } else if (payload.type === 'calendar') {
-        addCalendarWidgetInternal(firstPaneId);
-      }
-    } else {
-      console.error(
-        '>>> [ERROR] [Client] Cannot add widget, no panes available.',
-      );
-    }
-
-    // モーダルを閉じる (AddWidgetModal側で閉じても良い)
-    closeModal();
-  };
-
-  // メモウィジェットを追加する内部関数
-  const addMemoWidgetInternal = (paneId: string) => {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const newWidget: NoteWidget = {
-        id: crypto.randomUUID(),
-        type: 'note',
-        title: 'New Memo',
-        content: '',
-        fontFamily: DEFAULT_NOTE_FONT_FAMILY,
-        fontSize: DEFAULT_NOTE_FONT_SIZE,
-        isCollapsed: false,
-      };
-      targetPane.widgets.push(newWidget);
-      saveLayoutDebounced();
-    }
-  };
-
-  // RSSウィジェットを追加する内部関数
-  const addRssWidgetInternal = (
-    paneId: string,
-    feedUrl: string,
-    itemCount: number,
-  ) => {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const newWidget: RssWidget = {
-        id: crypto.randomUUID(),
-        type: 'rss',
-        feedUrl: feedUrl,
-        itemCount: itemCount || DEFAULT_RSS_ITEM_COUNT,
-        feedTitle: 'RSS Feed',
-        fontFamily: DEFAULT_RSS_FONT_FAMILY,
-        fontSize: DEFAULT_RSS_FONT_SIZE,
-        updateIntervalMinutes: DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
-        isCollapsed: false,
-      };
-      targetPane.widgets.push(newWidget);
-      saveLayoutDebounced();
-    } else {
-      console.warn(
-        `>>> [ERROR] [Client] Could not find pane with id ${paneId} to add RSS widget.`,
-      );
-    }
-  };
-
-  // カレンダーウィジェットを追加する内部関数
-  const addCalendarWidgetInternal = (paneId: string) => {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const newWidget: CalendarWidget = {
-        id: crypto.randomUUID(),
-        type: 'calendar',
-        iframeTag: '',
-        isCollapsed: false,
-      };
-      targetPane.widgets.push(newWidget);
-      saveLayoutDebounced();
-    } else {
-      console.warn(
-        `>>> [ERROR] [Client] Could not find pane with id ${paneId} to add Calendar widget.`,
-      );
-    }
-  };
-
-  // 削除ボタンクリック時の処理 (確認モーダルを開く)
-  const confirmRemoveWidget = (widgetId: string, paneId: string) => {
-    const pane = panesData.value.find((p) => p.id === paneId);
-    const widget = pane?.widgets.find((w) => w.id === widgetId);
-    if (widget) {
-      const description =
-        (widget.type === 'note'
-          ? widget.title
-          : (widget as RssWidget).feedTitle) ||
-        `${widget.type} ${t('widget.name')}`;
-      widgetToDelete.value = { widgetId, paneId, description };
-      activeModal.value = 'delete'; // 削除確認モーダルを開く
-    } else {
-      console.warn('[ERROR] Widget to delete not found.');
-    }
-  };
-
-  // ウィジェット削除確認
-  const handleConfirmDelete = () => {
-    if (widgetToDelete.value) {
-      removeWidgetInternal(
-        widgetToDelete.value.widgetId,
-        widgetToDelete.value.paneId,
-      );
-    }
-    closeModal();
-  };
-
-  // ウィジェット削除の内部処理
-  const removeWidgetInternal = (widgetId: string, paneId: string) => {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const initialLength = targetPane.widgets.length;
-      targetPane.widgets = targetPane.widgets.filter(
-        (widget) => widget.id !== widgetId,
-      );
-      if (targetPane.widgets.length < initialLength) {
-        saveLayoutDebounced();
-      }
-    }
-  };
-
-  // ウィジェットのD&D処理
-  const handleDragChange = (evt: any, paneId: string) => {
-    saveLayoutDebounced(); // ドラッグ完了後も保存
-  };
-
-  // メモ・RSSウィジェットの設定画面関係
-  const openSettingsModal = (
-    widgetId: string,
-    paneId: string,
-    widgetType: 'note' | 'rss' | 'calendar',
-  ) => {
-    const pane = panesData.value.find((p) => p.id === paneId);
-    const widget = pane?.widgets.find((w) => w.id === widgetId);
-    if (widget) {
-      // ウィジェットデータのコピーを渡す
-      editingWidgetData.value = { ...widget };
-      editingPaneId.value = paneId;
-      switch (widgetType) {
-        case 'note':
-          activeModal.value = 'memo';
-          break;
-
-        case 'rss':
-          activeModal.value = 'rss';
-          break;
-
-        case 'calendar':
-          activeModal.value = 'calendar';
-          break;
-        default:
-          break;
-      }
-    }
-  };
-
-  // 全体設定の設定画面表示
-  const openGlobalSettingsModal = () => {
-    // globalSettings は reactive なのでそのまま渡せる (コピーでも良い)
-    activeModal.value = 'global';
-  };
-
-  // モーダルを閉じる関数
-  const closeModal = () => {
-    activeModal.value = null;
-    editingWidgetData.value = null;
-    editingPaneId.value = null;
-    widgetToDelete.value = null;
-  };
-
-  // RSS設定モーダルの保存イベントハンドラ
-  const handleSaveRssSettings = (payload: RssSettingsPayload) => {
-    const { widgetId, paneId, settings } = payload;
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    const widgetIndex = targetPane?.widgets.findIndex(
-      (w) => w.id === widgetId && w.type === 'rss',
-    );
-
-    if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-      const widgetToUpdate = targetPane.widgets[widgetIndex] as RssWidget;
-      // settings の内容で上書き
-      Object.assign(widgetToUpdate, settings);
-      saveLayoutDebounced();
-    } else {
-      console.error(
-        `>>> [ERROR] [Client] Could not find RSS widget ${widgetId} to save settings from modal.`,
-      );
-    }
-    closeModal();
-  };
-
-  // メモ設定モーダルの保存イベントハンドラ
-  const handleSaveMemoSettings = (payload: MemoSettingsPayload) => {
-    const { widgetId, paneId, settings } = payload;
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    const widgetIndex = targetPane?.widgets.findIndex(
-      (w) => w.id === widgetId && w.type === 'note',
-    );
-
-    if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-      const widgetToUpdate = targetPane.widgets[widgetIndex] as NoteWidget;
-      Object.assign(widgetToUpdate, settings);
-      saveLayoutDebounced();
-    } else {
-      console.error(
-        `>>> [ERROR] [Client] Could not find Memo widget ${widgetId} to save settings from modal.`,
-      );
-    }
-
-    closeModal();
-  };
-
-  // カレンダー設定モーダルの保存イベントハンドラ
-  const handleSaveCalendarSettings = (payload: CalendarSettingsPayload) => {
-    const { widgetId, paneId, settings } = payload;
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    const widgetIndex = targetPane?.widgets.findIndex(
-      (w) => w.id === widgetId && w.type === 'calendar',
-    );
-
-    if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-      const widgetToUpdate = targetPane.widgets[widgetIndex] as CalendarWidget;
-      Object.assign(widgetToUpdate, settings);
-      saveLayoutDebounced();
-    } else {
-      console.error(
-        `>>> [ERROR] [Client] Could not find Calendar widget ${widgetId} to save settings from modal.`,
-      );
-    }
-    closeModal();
-  };
-
-  // 全体設定モーダルの保存イベントハンドラ
-  const handleSaveGlobalSettings = (payload: GlobalSettings) => {
-    Object.assign(globalSettings, payload); // globalSettings を更新
-
-    panesData.value.forEach((pane) => {
-      pane.widgets.forEach((widget) => {
-        if (widget.type === 'note' || widget.type === 'rss') {
-          widget.fontFamily = payload.fontFamily;
-          widget.fontSize = payload.fontSize;
-        }
-      });
-    });
-
-    // 全体設定DB保存
-    saveGlobalSettingsDebounced();
-    // レイアウトDB保存
-    saveLayoutDebounced();
-    closeModal();
-  };
-
-  // ウィジェット折りたたみ・展開処理
-  const toggleCollapse = (widgetId: string, paneId: string) => {
-    if (isLoading.value) {
-      return;
-    }
-
-    const pane = panesData.value.find((p) => p.id === paneId);
-    const widget = pane?.widgets.find((w) => w.id === widgetId);
-    if (widget) {
-      // isCollapsed プロパティを反転 (undefined の場合は false として扱う)
-      widget.isCollapsed = !(widget.isCollapsed ?? false);
-      saveLayoutDebounced(); // 状態が変わったのでレイアウトを保存
-    }
-  };
 
   // --- ページメタ情報 ---
-  useHead({
-    title: t('appTitle'),
-  });
+  useHead({ title: t('appTitle') });
 </script>
 
 <style scoped>
@@ -911,7 +374,7 @@
     border-bottom-color: #80bfff !important;
   }
   :deep(.ghost .widget-content) {
-    /* display: none; */ /* ゴースト中はコンテンツ不要なら非表示に */
+    /* display: none; */ /* ゴースト中はコンテンツ不要なら非表示 */
     visibility: hidden; /* コンテンツエリアは維持しつつ非表示 */
   }
 

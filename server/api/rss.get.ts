@@ -1,92 +1,110 @@
 // server/api/rss.get.ts
-import { defineEventHandler, getQuery, H3Error } from 'h3';
-import Parser from 'rss-parser'; // rss-parser をインポート
+import { defineEventHandler, getQuery, createError } from 'h3';
+import Parser from 'rss-parser';
+import { requireSession } from '~/server/utils/auth';
+import { fetchUrlSafely } from '~/server/utils/ssrf';
 
-// rss-parser のインスタンスを作成
-const parser = new Parser();
+// タイムアウト設定付き rss-parser インスタンス
+const parser = new Parser({
+  timeout: 10000, // 10秒
+});
+
+// クライアントに返すアイテム数の上限
+const MAX_ITEMS = 50;
+
+const toSafeHttpUrl = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+};
 
 export default defineEventHandler(async (event) => {
-  // クエリパラメータから 'url' を取得
+  // --- 1. 認証チェック ---
+  await requireSession(event);
+
+  // --- 2. クエリパラメータ取得 ---
   const query = getQuery(event);
   const feedUrl = query.url as string | undefined;
 
-  // URLが提供されていない場合はエラー
   if (!feedUrl) {
     throw createError({
-      statusCode: 400, // Bad Request
+      statusCode: 400,
       statusMessage: 'Query parameter "url" is required.',
     });
   }
 
-  console.log(`[API GET /api/rss] Received request for feed URL: ${feedUrl}`);
-
+  // --- 3. フィード取得・パース ---
   try {
-    // URLが有効か基本的なチェック (http/httpsで始まるか)
-    if (!feedUrl.startsWith('http://') && !feedUrl.startsWith('https://')) {
-      throw createError({
-        statusCode: 400,
-        statusMessage:
-          'Invalid feed URL protocol. Only http and https are allowed.',
-      });
-    }
+    const feedXml = await fetchUrlSafely(feedUrl, {
+      timeoutMs: 10000,
+      maxRedirects: 5,
+      maxBytes: 1024 * 1024,
+    });
+    const feed = await parser.parseString(feedXml);
 
-    // rss-parser を使ってフィードをURLからパース
-    // タイムアウトを設定するなど、より堅牢にすることも可能
-    const feed = await parser.parseURL(feedUrl);
+    // アイテム数を制限し、外部フィード由来の URL は http/https のみに正規化して返す
+    const items = (feed.items || []).slice(0, MAX_ITEMS).map((item) => ({
+      title: item.title,
+      link: toSafeHttpUrl(item.link),
+      pubDate: item.pubDate,
+      isoDate: item.isoDate,
+      contentSnippet: item.contentSnippet,
+      guid: item.guid,
+    }));
 
-    console.log(
-      `[API GET /api/rss] Successfully parsed feed: "${feed.title}" (${feed.items.length} items)`,
-    );
-
-    // 必要なデータだけを抽出・整形して返すこともできるが、
-    // まずはパース結果全体 (items を含む) を返す
-    // (クライアント側で itemCount に基づいて表示件数を絞る想定)
     return {
       title: feed.title,
-      link: feed.link,
-      items: feed.items, // items 配列をそのまま返す
+      link: toSafeHttpUrl(feed.link),
+      items,
     };
   } catch (error: any) {
-    console.error(
-      `[API GET /api/rss] Error fetching or parsing feed URL "${feedUrl}":`,
-      error,
-    );
+    // 詳細はクライアントに返さず、サーバーログにもURLや本文を出さない
+    console.error('[API GET /api/rss] Failed to fetch or parse RSS feed.');
 
     // エラーの種類に応じてステータスコードを調整
-    let statusCode = 500; // Internal Server Error (default)
+    let statusCode = 500;
     let statusMessage = 'Failed to fetch or parse RSS feed.';
 
-    if (error.message.includes('Status code')) {
-      // HTTPエラーコードが含まれている場合 (例: 404 Not Found)
+    if (typeof error.statusCode === 'number') {
+      statusCode = error.statusCode;
+      statusMessage =
+        statusCode === 413
+          ? 'RSS feed response is too large.'
+          : 'Invalid or blocked feed URL.';
+    } else if (error.message?.includes('Status code')) {
       const match = error.message.match(/Status code (\d+)/);
       if (match && match[1]) {
         const httpStatus = parseInt(match[1], 10);
-        // 4xx系のエラーはクライアントエラーとして扱うこともできる
         if (httpStatus >= 400 && httpStatus < 500) {
           statusCode = httpStatus;
           statusMessage = `Failed to fetch feed: ${httpStatus}`;
         }
       }
-    } else if (error instanceof H3Error) {
-      // createError で生成されたエラーの場合
-      statusCode = error.statusCode;
-      statusMessage = error.statusMessage || statusMessage;
     } else if (
+      error.message?.includes('Blocked') ||
+      error.message?.includes('Invalid URL') ||
+      error.message?.includes('Invalid URL protocol') ||
+      error.message?.includes('URL credentials') ||
+      error.message?.includes('Non-standard ports') ||
+      error.message?.includes('Too many redirects') ||
+      error.message?.includes('Redirect without Location') ||
       error.code === 'ENOTFOUND' ||
-      error.message.includes('Invalid URL')
+      error.code === 'ECONNREFUSED' ||
+      error.message?.includes('timeout')
     ) {
-      // DNS解決エラーや無効なURL
-      statusCode = 400; // Bad Request として扱う
+      statusCode = 400;
       statusMessage = 'Invalid or unreachable feed URL.';
     }
 
-    // createError でエラーをラップして返す
+    // クライアントには汎用メッセージのみ返す（内部情報は詳細ログに留める）
     throw createError({
-      statusCode: statusCode,
-      statusMessage: statusMessage,
-      // エラーの詳細を message に含める (開発中は便利)
-      // 本番環境では詳細をログに留め、クライアントには汎用メッセージを返すのが望ましい場合も
-      message: error.message || 'An unexpected error occurred.',
+      statusCode,
+      statusMessage,
     });
   }
 });

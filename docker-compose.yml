@@ -1,16 +1,71 @@
 services:
+  # --- Traefik (リバースプロキシ & HTTPS化) ---
+  traefik:
+    # image: traefik:latest
+    image: traefik:v3.7
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      # Dockerと連携
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      # エントリーポイント (80番と443番)
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+      # http -> https リダイレクト設定
+      - '--entrypoints.web.http.redirections.entryPoint.to=websecure'
+      - '--entrypoints.web.http.redirections.entryPoint.scheme=https'
+      # 設定ファイル読み込み
+      - '--providers.file.filename=/etc/traefik/dynamic_conf.yml'
+      # ダッシュボード有効化 (traefik ラベルでルーティング・認証を付与)
+      - '--api.dashboard=true'
+      # ※ --api.insecure=true は削除: 認証なし公開を防止
+    ports:
+      - '80:80'
+      - '443:443'
+      # ※ 8080 (insecure dashboard) は公開しない
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+      - './certs:/certs' # 証明書フォルダ
+      - './traefik_dynamic.yml:/etc/traefik/dynamic_conf.yml' # Traefik設定
+    networks:
+      - internal
+    labels:
+      # ダッシュボードを BasicAuth 付きで公開
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.dashboard.rule=Host(`traefik.memo-app.local`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))'
+      - 'traefik.http.routers.dashboard.entrypoints=websecure'
+      - 'traefik.http.routers.dashboard.tls=true'
+      - 'traefik.http.routers.dashboard.service=api@internal'
+      - 'traefik.http.routers.dashboard.middlewares=dashboard-auth'
+      # BasicAuth (開発用: .env の TRAEFIK_DASHBOARD_AUTH_USERS で指定。本番前に必ず変更すること)
+      - 'traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH_USERS:?Set TRAEFIK_DASHBOARD_AUTH_USERS in .env}'
+
+  # --- Nuxt App (既存のアプリ) ---
   nuxt-app:
+    container_name: memo-app-nuxt-app
     build:
       context: .
       args:
-        # ビルド時の Prisma Generate 用に Docker 用のパスを渡す
         DATABASE_URL_BUILD: 'file:/app/.data/dev.db'
-    ports: # ホストの3000番は他アプリ開発でよく使われるので避ける
-      - '3100:3000'
     env_file:
       - .env.docker
     volumes:
       - ./.data:/app/.data
     restart: unless-stopped
-    # 必要に応じてユーザー指定
-    # user: "node"
+
+    # 【重要】 labels はここ（services > nuxt-app の直下）に書きます
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.nuxt-app.rule=Host(`memo-app.local`)'
+      - 'traefik.http.routers.nuxt-app.entrypoints=websecure'
+      - 'traefik.http.routers.nuxt-app.tls=true'
+      - 'traefik.http.services.nuxt-app.loadbalancer.server.port=3000'
+    networks:
+      - internal
+
+  # --- Networks ---
+  # internal: traefik ↔ nuxt-app 間通信用。外部公開は traefik の ports のみ。
+networks:
+  internal:
+    driver: bridge

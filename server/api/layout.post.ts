@@ -1,165 +1,79 @@
 // server/api/layout.post.ts
-import {
-  defineEventHandler,
-  createError,
-  getCookie,
-  setCookie,
-  readBody,
-} from 'h3'; // readBody もインポート
-import { PrismaClient } from '@prisma/client';
-import { lucia } from '~/server/utils/auth';
+import { defineEventHandler, createError, readBody } from 'h3';
+import { z } from 'zod';
+import { prisma } from '~/server/utils/prisma';
+import { requireSession } from '~/server/utils/auth';
 
-// Prisma Client のインスタンスを作成
-const prisma = new PrismaClient();
+// --- レイアウトデータのバリデーションスキーマ ---
+// types/index.ts の PaneData / Widget 型に対応
+const widgetSchema = z.discriminatedUnion('type', [
+  z.object({
+    id: z.string(),
+    type: z.literal('note'),
+    title: z.string().optional(),
+    content: z.string(),
+    fontFamily: z.string().nullable().optional(),
+    fontSize: z.number().nullable().optional(),
+    isCollapsed: z.boolean().optional(),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal('rss'),
+    feedUrl: z.string(),
+    itemCount: z.number(),
+    feedTitle: z.string().optional(),
+    fontFamily: z.string().nullable().optional(),
+    fontSize: z.number().nullable().optional(),
+    updateIntervalMinutes: z.number().nullable().optional(),
+    isCollapsed: z.boolean().optional(),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal('calendar'),
+    iframeTag: z.string(),
+    isCollapsed: z.boolean().optional(),
+  }),
+]);
+
+const paneSchema = z.object({
+  id: z.string(),
+  size: z.number(),
+  widgets: z.array(widgetSchema),
+});
+
+const layoutSchema = z.array(paneSchema);
 
 export default defineEventHandler(async (event) => {
-  console.log('[API POST /api/layout] Request received.');
+  const { userId } = await requireSession(event);
 
-  // --- 1. 認証チェック ---
-  const sessionId = getCookie(event, lucia.sessionCookieName);
-  if (!sessionId) {
-    console.log('[API POST /api/layout] No session cookie found.');
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized: No session',
-    });
-  }
+  const rawBody = await readBody(event);
 
-  const { session, user } = await lucia.validateSession(sessionId);
-
-  if (!session) {
-    const sessionCookie = lucia.createBlankSessionCookie();
-    setCookie(
-      event,
-      sessionCookie.name,
-      sessionCookie.value,
-      sessionCookie.attributes,
-    );
-    console.log('[API POST /api/layout] Invalid session.');
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized: Invalid session',
-    });
-  }
-
-  // セッションの鮮度を更新 (任意)
-  if (session.fresh) {
-    const sessionCookie = lucia.createSessionCookie(session.id);
-    setCookie(
-      event,
-      sessionCookie.name,
-      sessionCookie.value,
-      sessionCookie.attributes,
-    );
-    console.log('[API POST /api/layout] Session refreshed.');
-  }
-
-  const userId = session.userId;
-  console.log(`[API POST /api/layout] Authenticated user: ${userId}`);
-
-  console.log(`[API POST /api/layout] Valid session found. User object:`, user);
-  console.log(
-    `[API POST /api/layout] Extracted userId:`,
-    userId,
-    `(Type: ${typeof userId})`,
-  );
-
-  // userId が undefined でないことを確認してから DB 操作へ進むチェックを追加 (より安全)
-  if (typeof userId !== 'string' || userId.length === 0) {
-    console.error(
-      `[API POST /api/layout] userId is invalid or undefined after validation! userId: ${userId}`,
-    );
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error: User ID is missing in session',
-    });
-  }
-
-  console.log(
-    `[API POST /api/layout] Authenticated user confirmed with valid userId: ${userId}`,
-  );
-
-  // --- 2. リクエストボディの取得と検証 ---
-  let layoutDataFromClient;
-  try {
-    layoutDataFromClient = await readBody(event);
-    console.log(
-      `[API POST /api/layout] Received layout data for user ${userId}:`,
-      layoutDataFromClient,
-    );
-
-    // --- 入力データバリデーション ---
-    if (!layoutDataFromClient || typeof layoutDataFromClient !== 'object') {
-      throw createError({
-        statusCode: 400,
-        statusMessage:
-          'Bad Request: Invalid layout data format (must be an object/array)',
-      });
-    }
-
-    // 必要であれば、配列であること、各要素が特定のプロパティを持つことなどをチェック
-    if (!Array.isArray(layoutDataFromClient)) {
-      console.warn(
-        `[API POST /api/layout] Received non-array layout data for user ${userId}. Type: ${typeof layoutDataFromClient}`,
-      );
-    }
-  } catch (readError: any) {
-    console.error(
-      `[API POST /api/layout] Error reading request body for user ${userId}:`,
-      readError,
-    );
+  // --- 入力値バリデーション (Zod) ---
+  const parsed = layoutSchema.safeParse(rawBody);
+  if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Bad Request: Could not read request body',
-      message: readError.message,
+      statusMessage: 'Bad Request: Invalid layout data format',
     });
   }
+  const layoutDataFromClient = parsed.data;
 
-  // --- 3. データベースへの保存 ---
   try {
-    // 受け取ったレイアウトデータ (JSオブジェクト/配列) をJSON文字列に変換
     const layoutDataString = JSON.stringify(layoutDataFromClient);
-    console.log(
-      `[API POST /api/layout] Stringified layout data length for user ${userId}: ${layoutDataString.length}`,
-    );
 
-    // Prisma を使用して、ユーザーのレイアウトデータを更新または作成 (upsert)
-    const upsertResult = await prisma.layout.upsert({
-      where: {
-        userId: userId, // ログインユーザーで検索
-      },
-      update: {
-        // 存在する場合の更新データ
-        data: layoutDataString,
-        // updatedAt は自動で更新される
-      },
-      create: {
-        // 存在しない場合の作成データ
-        userId: userId,
-        data: layoutDataString,
-      },
-      select: {
-        // 結果として何を取得するか (デバッグ用に updatedAt を取得)
-        updatedAt: true,
-      },
+    await prisma.layout.upsert({
+      where: { userId },
+      update: { data: layoutDataString },
+      create: { userId, data: layoutDataString },
     });
-
-    console.log(
-      `[API POST /api/layout] Layout saved successfully for user ${userId}. DB updatedAt: ${upsertResult.updatedAt}`,
-    );
 
     return { success: true };
   } catch (dbError: any) {
-    // データベースエラー
-    console.error(
-      `[API POST /api/layout] Database error saving layout for user ${userId}:`,
-      dbError,
-    );
-
+    if (dbError.statusCode) throw dbError;
     throw createError({
       statusCode: 500,
-      statusMessage: 'Internal Server Error: Failed to save layout state to DB',
-      message: dbError.message,
+      statusMessage:
+        'Internal Server Error: Failed to save layout state to DB',
     });
   }
 });

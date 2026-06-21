@@ -6,3 +6,16 @@ dist
 .git
 .github
 .vscode
+
+# Local/runtime secrets and generated data must never enter Docker build context
+.env
+.env*
+.env.*
+*.pem
+certs/
+.data/
+
+# Local-only compose backups and screenshots
+backup_docker-compose.yml
+docker-compose.yml.bak
+memo-app-*.png

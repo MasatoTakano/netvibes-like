@@ -16,10 +16,29 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import DOMPurify from 'dompurify';
-  import { useTheme } from '~/composables/useTheme'; // useTheme をインポート
+  import { useTheme } from '~/composables/useTheme';
+
+  const ALLOWED_CALENDAR_HOSTS = new Set([
+    'calendar.google.com',
+    'www.google.com',
+  ]);
+
+  const isAllowedCalendarSrc = (src: string): boolean => {
+    try {
+      const url = new URL(src);
+      if (url.protocol !== 'https:') return false;
+      if (!ALLOWED_CALENDAR_HOSTS.has(url.hostname)) return false;
+      return (
+        url.hostname === 'calendar.google.com' ||
+        (url.hostname === 'www.google.com' && url.pathname.startsWith('/calendar/'))
+      );
+    } catch {
+      return false;
+    }
+  };
 
   // --- Theme ---
-  const { isDarkMode } = useTheme(); // 現在のテーマを取得
+  const { isDarkMode } = useTheme();
 
   // --- Props ---
   const props = defineProps({
@@ -35,9 +54,8 @@
 
   // --- Computed ---
   const sanitizedIframeTag = computed(() => {
-    // DOMPurify を使って iframe タグをサニタイズ
-    return DOMPurify.sanitize(props.iframeTag, {
-      ADD_TAGS: ['iframe'], // iframe タグを許可
+    const sanitized = DOMPurify.sanitize(props.iframeTag, {
+      ADD_TAGS: ['iframe'],
       ADD_ATTR: [
         'src',
         'style',
@@ -48,18 +66,27 @@
         'referrerpolicy',
         'width',
         'height',
-      ], // 許可する属性を追加
+      ],
     });
-  });
 
-  watch(
-    () => props.iframeTag,
-    (newTag) => {
-      console.log('Original iframeTag:', newTag);
-      console.log('Sanitized iframeTag:', sanitizedIframeTag.value);
-    },
-    { immediate: true },
-  );
+    const template = document.createElement('template');
+    template.innerHTML = sanitized;
+
+    const allowedIframes: string[] = [];
+    for (const iframe of Array.from(template.content.querySelectorAll('iframe'))) {
+      const src = iframe.getAttribute('src') || '';
+      if (!isAllowedCalendarSrc(src)) {
+        continue;
+      }
+
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
+      iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+      allowedIframes.push(iframe.outerHTML);
+    }
+
+    // カレンダー設定は iframe タグ専用。iframe 以外のサニタイズ済みHTMLも表示しない。
+    return allowedIframes.join('');
+  });
 </script>
 
 <style scoped>

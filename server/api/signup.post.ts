@@ -1,37 +1,37 @@
 // server/api/signup.post.ts
-import { PrismaClient } from '@prisma/client';
 import { hash } from '@node-rs/argon2'; // oslo/password の代わりに Argon2 を直接使う (oslo非推奨化のため)
 import { generateId } from 'lucia'; // ユーザーID生成用
+import { z } from 'zod';
+import { prisma } from '~/server/utils/prisma';
 
-const prisma = new PrismaClient();
-
-// Email の形式を簡易的にチェックする関数 (必要に応じてより厳密に)
-const isValidEmail = (email: string): boolean => {
-  // 簡単な正規表現チェック
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
+// --- 入力バリデーションスキーマ ---
+const signupSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .max(254, 'Email is too long')
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format')
+    .transform((e) => e.toLowerCase().trim()),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters long')
+    .max(128, 'Password is too long'),
+  name: z.string().max(100, 'Name is too long').optional(),
+});
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { email, password, name } = body;
 
-  // --- 入力値バリデーション ---
-  if (typeof email !== 'string' || !isValidEmail(email)) {
+  // --- 入力値バリデーション (Zod) ---
+  const parsed = signupSchema.safeParse(body);
+  if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid email format',
+      statusMessage: parsed.error.issues[0]?.message || 'Invalid input',
     });
   }
-  if (typeof password !== 'string' || password.length < 8) {
-    // 例: 最低8文字
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Password must be at least 8 characters long',
-    });
-  }
-  // name は任意なのでチェックは緩め (必要なら追加)
-  const optionalName = typeof name === 'string' ? name : null;
+  const { email, password, name } = parsed.data;
+  const optionalName = name ?? null;
 
   try {
     // --- Email の重複チェック ---
@@ -90,12 +90,9 @@ export default defineEventHandler(async (event) => {
     // const sessionCookie = lucia.createSessionCookie(session.id);
     // setCookie(event, sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
     // return { success: true, user: { id: userId, email } }; // セッション情報などを返す
-
-    console.log(`User created successfully: ${email}`);
     // サインアップ成功レスポンス (自動ログインさせない場合)
     return { success: true };
   } catch (error: any) {
-    console.error('Signup error:', error);
 
     // エラーが createError で作成されたものならそのまま投げる
     if (error.statusCode) {
