@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: /certs/memo-app.local.pem
+      keyFile: /certs/memo-app.local-key.pem

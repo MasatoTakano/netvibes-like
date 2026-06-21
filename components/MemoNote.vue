@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
   import { ref, nextTick, watch, computed } from 'vue';
+  import DOMPurify from 'dompurify';
 
   // --- Props ---
   const props = defineProps({
@@ -88,15 +89,30 @@
 
   const linkifyUrls = (text: string, shouldShorten: boolean = false): string => {
     if (!text) return '';
-    // URLを検出する正規表現 - パーセントエンコードされた文字も含めるように改良
-    const urlRegex =
-      /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
-    // HTMLエスケープをしてからURLをリンクに置換
-    const escapedText = escapeHtml(text);
-    return escapedText.replace(urlRegex, (url) => {
-      // target="_blank" と rel を追加
-      const displayText = shouldShorten ? shortenUrl(url) : url;
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${displayText}</a>`;
+
+    // v-html に渡すため、HTML組み立て後に DOMPurify で最終サニタイズする。
+    // リンク化対象は http/https のみに限定し、file: や javascript: 等は生成しない。
+    const urlRegex = /(https?:\/\/[^\s<>'"]+)/gi;
+    const parts: string[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = urlRegex.exec(text)) !== null) {
+      const url = match[0];
+      parts.push(escapeHtml(text.slice(lastIndex, match.index)));
+      const safeUrl = escapeHtmlAttribute(url);
+      const displayText = escapeHtml(shouldShorten ? shortenUrl(url) : url);
+      parts.push(
+        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${displayText}</a>`,
+      );
+      lastIndex = match.index + url.length;
+    }
+
+    parts.push(escapeHtml(text.slice(lastIndex)));
+
+    return DOMPurify.sanitize(parts.join(''), {
+      ALLOWED_TAGS: ['a'],
+      ALLOWED_ATTR: ['href', 'target', 'rel'],
     });
   };
 
@@ -107,6 +123,10 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  };
+
+  const escapeHtmlAttribute = (unsafe: string): string => {
+    return escapeHtml(unsafe).replace(/`/g, '&#096;');
   };
 
   watch(
@@ -156,7 +176,6 @@
       // 少し余裕を持たせる (任意)
       const newHeight = textarea.scrollHeight;
       textarea.style.height = `${newHeight}px`;
-      // console.log(`[MemoNote ${props.id}] Textarea height adjusted to: ${newHeight}px`);
     }
   };
 
@@ -171,10 +190,8 @@
     document.removeEventListener('click', handleClickOutside, true);
 
     if (contentChanged) {
-      console.log(`[MemoNote ${props.id}] Content changed. Emitting update.`);
       emit('update:content', editingContent.value);
     } else {
-      console.log(`[MemoNote ${props.id}] Content not changed.`);
       // 再レンダリングは watch に任せる
     }
     // Textarea の高さリセット
@@ -193,7 +210,6 @@
     document.removeEventListener('click', handleClickOutside, true);
     editingContent.value = ''; // 編集内容は破棄
 
-    console.log(`[MemoNote ${props.id}] Editing cancelled.`);
     // Textarea の高さリセット
     if (textareaRef.value) {
       textareaRef.value.style.height = 'auto';
@@ -201,11 +217,10 @@
   };
 
   // textarea からフォーカスが外れた時の処理
-  const handleBlur = (event: FocusEvent) => {
+  const handleBlur = () => {
     // setTimeout を使って、範囲外クリックハンドラが先に実行されるのを待つ猶予を与える
     // (関連ターゲットがない場合や、関連ターゲットがコンポーネント外部の場合に保存)
     //   -> 複雑になるので、一旦 blur 時に常に保存を試みる simpler approach
-    console.log(`[MemoNote ${props.id}] Textarea blurred.`);
     finishEditing();
   };
 
@@ -216,7 +231,6 @@
     }
     // クリックされた場所がコンポーネントの内部（textarea含む）でないことを確認
     if (!memoNoteRef.value.contains(event.target as Node)) {
-      console.log(`[MemoNote ${props.id}] Clicked outside.`);
       finishEditing();
     }
   };

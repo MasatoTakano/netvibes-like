@@ -1,21 +1,26 @@
 // server/api/login.post.ts
-import { PrismaClient } from '@prisma/client';
 import { verify } from '@node-rs/argon2'; // パスワード検証用
+import { z } from 'zod';
 import { lucia } from '~/server/utils/auth'; // Lucia インスタンス
+import { prisma } from '~/server/utils/prisma';
 
-const prisma = new PrismaClient();
+const loginSchema = z.object({
+  email: z.string().min(1).transform((e) => e.toLowerCase().trim()),
+  password: z.string().min(1),
+});
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { email, password } = body;
 
-  // --- 入力値バリデーション ---
-  if (typeof email !== 'string' || typeof password !== 'string') {
+  // --- 入力値バリデーション (Zod) ---
+  const parsed = loginSchema.safeParse(body);
+  if (!parsed.success) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Invalid credentials format',
     });
   }
+  const { email, password } = parsed.data;
 
   try {
     // --- Key 情報の検索 ---
@@ -29,7 +34,6 @@ export default defineEventHandler(async (event) => {
 
     if (!key || !key.hashedPassword) {
       // ユーザーが存在しないか、パスワードが設定されていない場合
-      console.log(`Login failed: Key not found or no password for ${email}`);
       throw createError({
         statusCode: 401, // Unauthorized
         statusMessage: 'Incorrect email or password', // 具体的な理由は返さない
@@ -40,7 +44,6 @@ export default defineEventHandler(async (event) => {
     const isValidPassword = await verify(key.hashedPassword, password);
 
     if (!isValidPassword) {
-      console.log(`Login failed: Invalid password for ${email}`);
       throw createError({
         statusCode: 401, // Unauthorized
         statusMessage: 'Incorrect email or password',
@@ -76,8 +79,6 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'Could not retrieve user data after login',
       });
     }
-
-    console.log(`Login successful, session created for user: ${key.userId}`);
     // ログイン成功レスポンス (特にデータは返さなくても良い)
     return {
       success: true,
@@ -88,7 +89,6 @@ export default defineEventHandler(async (event) => {
       },
     };
   } catch (error: any) {
-    console.error('Login error:', error);
     if (error.statusCode) {
       // createError で投げられたエラーはそのまま返す
       throw error;

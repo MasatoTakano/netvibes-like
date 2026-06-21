@@ -22,3 +22,13 @@ logs
 .env
 .env.*
 !.env.example
+!.env.docker.example
+
+# Local certificates / runtime data
+certs/
+.data/
+
+# Local compose backups / screenshots
+backup_docker-compose.yml
+docker-compose.yml.bak
+memo-app-*.png
