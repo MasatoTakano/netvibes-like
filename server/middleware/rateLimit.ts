@@ -1,5 +1,5 @@
 // server/middleware/rateLimit.ts
-// ログイン試行のレートリミント（IP単位、メモリベース）
+// 認証系エンドポイントのレートリミット（IP単位、メモリベース）。
 // 単一インスタンス運用を前提。多段構成の場合は Redis 等の外部ストアに移行すること。
 
 import {
@@ -9,15 +9,38 @@ import {
   setResponseHeader,
   type H3Event,
 } from 'h3';
+import { pickTrustedClientIp } from '~/server/utils/clientIp';
 
 const WINDOW_MS = 15 * 60 * 1000; // 15分ウィンドウ
-const MAX_ATTEMPTS = 10; // 15分あたり10回まで
+
+// 保護対象ルートとウィンドウあたりの上限。
+// - login: クレデンシャルスタッフィング対策
+// - signup: メール列挙(409応答)と大量アカウント生成対策
+interface ProtectedRoute {
+  key: string;
+  max: number;
+  matches: (url: string, method: string) => boolean;
+}
+
+const PROTECTED_ROUTES: ProtectedRoute[] = [
+  {
+    key: 'login',
+    max: 10,
+    matches: (url, method) => url === '/api/login' && method === 'POST',
+  },
+  {
+    key: 'signup',
+    max: 5,
+    matches: (url, method) => url === '/api/signup' && method === 'POST',
+  },
+];
 
 interface RateEntry {
   count: number;
   resetAt: number;
 }
 
+// バケットキーは `${routeKey}:${ip}` でルート毎に独立カウントする
 const attempts = new Map<string, RateEntry>();
 
 // 期限切れエントリの定期クリーンアップ（メモリリーク防止）
@@ -38,37 +61,39 @@ function cleanup() {
 }
 
 export default defineEventHandler(async (event: H3Event) => {
-  // /api/login POST のみに適用
   const url = event.path || event.node.req.url || '';
-  if (!url.startsWith('/api/login') || event.method !== 'POST') {
+  const method = event.method;
+
+  const route = PROTECTED_ROUTES.find((r) => r.matches(url, method));
+  if (!route) {
     return;
   }
 
   cleanup();
 
-  // クライアント IP を取得（Traefik 背後を想定）
-  const xForwardedFor = getRequestHeader(event, 'x-forwarded-for');
-  const ip =
-    (xForwardedFor && xForwardedFor.split(',')[0]?.trim()) ||
-    event.node.req.socket.remoteAddress ||
-    'unknown';
+  // クライアント IP を取得（XFF 偽装対策済みのヘルパーを使用）
+  const ip = pickTrustedClientIp({
+    xForwardedFor: getRequestHeader(event, 'x-forwarded-for'),
+    socketRemoteAddress: event.node.req.socket.remoteAddress,
+  });
 
+  const bucketKey = `${route.key}:${ip}`;
   const now = Date.now();
-  const entry = attempts.get(ip);
+  const entry = attempts.get(bucketKey);
 
   if (!entry || now > entry.resetAt) {
-    attempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    attempts.set(bucketKey, { count: 1, resetAt: now + WINDOW_MS });
     return;
   }
 
   entry.count++;
 
-  if (entry.count > MAX_ATTEMPTS) {
+  if (entry.count > route.max) {
     const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
     setResponseHeader(event, 'Retry-After', retryAfter);
     throw createError({
       statusCode: 429,
-      statusMessage: 'Too many login attempts. Please try again later.',
+      statusMessage: 'Too many requests. Please try again later.',
     });
   }
 });

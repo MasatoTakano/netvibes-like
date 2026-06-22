@@ -17,25 +17,7 @@
   import { computed } from 'vue';
   import DOMPurify from 'dompurify';
   import { useTheme } from '~/composables/useTheme';
-
-  const ALLOWED_CALENDAR_HOSTS = new Set([
-    'calendar.google.com',
-    'www.google.com',
-  ]);
-
-  const isAllowedCalendarSrc = (src: string): boolean => {
-    try {
-      const url = new URL(src);
-      if (url.protocol !== 'https:') return false;
-      if (!ALLOWED_CALENDAR_HOSTS.has(url.hostname)) return false;
-      return (
-        url.hostname === 'calendar.google.com' ||
-        (url.hostname === 'www.google.com' && url.pathname.startsWith('/calendar/'))
-      );
-    } catch {
-      return false;
-    }
-  };
+  import { isAllowedCalendarSrc } from '~/utils/calendarHosts';
 
   // --- Theme ---
   const { isDarkMode } = useTheme();

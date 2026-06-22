@@ -3,6 +3,7 @@ import { defineEventHandler, createError, readBody } from 'h3';
 import { z } from 'zod';
 import { prisma } from '~/server/utils/prisma';
 import { requireSession } from '~/server/utils/auth';
+import { validateCalendarIframeTag } from '~/server/utils/calendar';
 
 // --- レイアウトデータのバリデーションスキーマ ---
 // types/index.ts の PaneData / Widget 型に対応
@@ -41,7 +42,25 @@ const paneSchema = z.object({
   widgets: z.array(widgetSchema),
 });
 
-const layoutSchema = z.array(paneSchema);
+// 多層防御: カレンダーウィジェットの iframeTag をサーバー側で検証する。
+// ※ discriminatedUnion の各要素に refine を付けると ZodEffects 化して
+//    差別化型の要件を満たさなくなるため、全体に superRefine で検証する。
+const layoutSchema = z.array(paneSchema).superRefine((panes, ctx) => {
+  panes.forEach((pane, paneIdx) => {
+    pane.widgets.forEach((widget, widgetIdx) => {
+      if (widget.type === 'calendar') {
+        const result = validateCalendarIframeTag(widget.iframeTag);
+        if (!result.ok) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: result.reason,
+            path: [paneIdx, 'widgets', widgetIdx, 'iframeTag'],
+          });
+        }
+      }
+    });
+  });
+});
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireSession(event);

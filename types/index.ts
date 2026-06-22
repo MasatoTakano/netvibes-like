@@ -35,6 +35,13 @@ export interface CalendarWidget extends WidgetBase {
   isCollapsed?: boolean;
 }
 
+// --- 設定モーダル用のウィジェット型 (ウィジェット + paneId) ---
+// モーダルには親 (index.vue) から { ...widget, paneId } の形で渡されるため、
+// paneId を併せ持つ型をここで一元管理する（各モーダルでのローカル定義重複を防ぐ）。
+export type NoteWidgetWithPane = NoteWidget & { paneId?: string };
+export type RssWidgetWithPane = RssWidget & { paneId?: string };
+export type CalendarWidgetWithPane = CalendarWidget & { paneId?: string };
+
 // --- ペインデータ型 ---
 export interface PaneData {
   id: string;
@@ -67,9 +74,11 @@ export interface FeedData {
 }
 
 // --- 設定画面ペイロード型 (イベントの型付け用型定義) ---
+// paneId は親(index.vue)の編集中ペインが未確定の可能性を考慮し optional とする
+// (WidgetWithPane 系の型と整合させる)。
 export interface RssSettingsPayload {
   widgetId: string;
-  paneId: string;
+  paneId?: string;
   settings: Pick<
     RssWidget,
     | 'feedUrl'
@@ -81,12 +90,12 @@ export interface RssSettingsPayload {
 }
 export interface MemoSettingsPayload {
   widgetId: string;
-  paneId: string;
+  paneId?: string;
   settings: Pick<NoteWidget, 'title' | 'fontFamily' | 'fontSize'>;
 }
 
 export interface CalendarSettingsPayload {
   widgetId: string;
-  paneId: string;
+  paneId?: string;
   settings: Pick<CalendarWidget, 'iframeTag'>;
 }

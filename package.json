@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@lucia-auth/adapter-prisma": "^4.0.1",
+    "@node-rs/argon2": "^1.8.3",
     "@prisma/client": "^5.22.0",
     "@vueuse/core": "^13.1.0",
     "dompurify": "^3.2.5",

@@ -1,8 +1,12 @@
 // server/api/signup.post.ts
-import { hash } from '@node-rs/argon2'; // oslo/password の代わりに Argon2 を直接使う (oslo非推奨化のため)
 import { generateId } from 'lucia'; // ユーザーID生成用
 import { z } from 'zod';
 import { prisma } from '~/server/utils/prisma';
+import {
+  defaultLayoutData,
+  DEFAULT_GLOBAL_SETTINGS,
+} from '~/constants';
+import { hashPassword } from '~/server/utils/password';
 
 // --- 入力バリデーションスキーマ ---
 const signupSchema = z.object({
@@ -46,13 +50,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // --- パスワードのハッシュ化 ---
-    // Argon2id を使用 (oslo/password の内部実装に近い)
-    const hashedPassword = await hash(password, {
-      // Argon2 パラメータ (デフォルト推奨)
-      memoryCost: 19456, // 19 MiB
-      timeCost: 2,
-      parallelism: 1,
-    });
+    // Argon2id を使用 (server/utils/password.ts でパラメータを一元管理)
+    const hashedPassword = await hashPassword(password);
 
     // --- ユーザーIDの生成 ---
     const userId = generateId(15); // 15文字のランダムなID
@@ -72,7 +71,7 @@ export default defineEventHandler(async (event) => {
         },
         setting: {
           create: {
-            data: JSON.stringify(defaultSettingsData), // デフォルト設定
+            data: JSON.stringify(DEFAULT_GLOBAL_SETTINGS), // デフォルト設定
           },
         },
         // Key情報も作成
@@ -99,6 +98,15 @@ export default defineEventHandler(async (event) => {
       throw error;
     }
 
+    // メール一意制約違反(並発リクエストによるTOCTOU)は 409 に変換。
+    // DB の @unique 制約が最終防御線となる。
+    if (error.code === 'P2002') {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Email already in use',
+      });
+    }
+
     // その他の予期せぬエラー
     throw createError({
       statusCode: 500,
@@ -106,34 +114,3 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
-// --- デフォルトデータの定義 ---
-// 実際のデフォルト値に置き換えてください
-const defaultLayoutData = [
-  {
-    id: 'pane-1',
-    size: 33.3,
-    widgets: [
-      /* 初期ウィジェット */
-    ],
-  },
-  {
-    id: 'pane-2',
-    size: 33.3,
-    widgets: [
-      /* 初期ウィジェット */
-    ],
-  },
-  {
-    id: 'pane-3',
-    size: 33.3,
-    widgets: [
-      /* 初期ウィジェット */
-    ],
-  },
-];
-const defaultSettingsData = {
-  fontFamily: 'Arial',
-  fontSize: 14,
-  backgroundColor: '#ffffff',
-};

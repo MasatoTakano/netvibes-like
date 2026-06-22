@@ -240,7 +240,7 @@ export function useLayout() {
     }
   }
 
-  function handleDragChange(evt: any, paneId: string) {
+  function handleDragChange() {
     saveLayoutDebounced();
   }
 

@@ -69,14 +69,15 @@
     DEFAULT_NOTE_FONT_FAMILY,
     DEFAULT_NOTE_FONT_SIZE,
   } from '~/constants';
+  import type { NoteWidgetWithPane } from '~/types';
 
   const { t } = useI18n();
 
   // 親から渡される Props
   const props = defineProps({
     show: { type: Boolean, required: true },
-    widgetData: { type: Object as () => NoteWidget | null, default: null }, // 編集対象ウィジェットデータ
-    availableFonts: { type: Array as () => string[], default: () => [] }, // フォントリスト
+    widgetData: { type: Object as () => NoteWidgetWithPane | null, default: null }, // 編集対象ウィジェットデータ
+    availableFonts: { type: Array as () => readonly string[], default: () => [] }, // フォントリスト
   });
 
   // 親へ通知する Emits
@@ -140,17 +141,6 @@
   const close = () => {
     emit('close');
   };
-
-  // RssWidget 型定義 (インポートするか、ここで定義)
-  interface NoteWidget {
-    id: string;
-    paneId?: string; // 親から渡す際に付与する必要あり
-    type: 'note';
-    title?: string; // タイトル
-    content: string; // メモ内容
-    fontFamily?: string; // フォントファミリー
-    fontSize?: number; // フォントサイズ(px単位で保存)
-  }
 </script>
 
 <style scoped>

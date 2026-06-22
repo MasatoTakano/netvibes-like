@@ -1,8 +1,8 @@
 // server/api/login.post.ts
-import { verify } from '@node-rs/argon2'; // パスワード検証用
 import { z } from 'zod';
 import { lucia } from '~/server/utils/auth'; // Lucia インスタンス
 import { prisma } from '~/server/utils/prisma';
+import { verifyPassword, getDummyHash } from '~/server/utils/password';
 
 const loginSchema = z.object({
   email: z.string().min(1).transform((e) => e.toLowerCase().trim()),
@@ -33,7 +33,10 @@ export default defineEventHandler(async (event) => {
     });
 
     if (!key || !key.hashedPassword) {
-      // ユーザーが存在しないか、パスワードが設定されていない場合
+      // ユーザーが存在しないか、パスワードが設定されていない場合。
+      // タイミング攻撃(メール列挙)対策: 存在しないアカウントでも argon2 verify の
+      // 計算コストを払って応答時間を均す。結果は破棄する。
+      await verifyPassword(await getDummyHash(), password).catch(() => false);
       throw createError({
         statusCode: 401, // Unauthorized
         statusMessage: 'Incorrect email or password', // 具体的な理由は返さない
@@ -41,7 +44,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // --- パスワードの検証 ---
-    const isValidPassword = await verify(key.hashedPassword, password);
+    const isValidPassword = await verifyPassword(key.hashedPassword, password);
 
     if (!isValidPassword) {
       throw createError({

@@ -50,7 +50,7 @@
   const props = defineProps({
     show: { type: Boolean, required: true },
     initialSettings: { type: Object as () => GlobalSettings, required: true }, // 現在の全体設定
-    availableFonts: { type: Array as () => string[], default: () => [] }, // フォントリスト
+    availableFonts: { type: Array as () => readonly string[], default: () => [] }, // フォントリスト
   });
 
   // 親へ通知する Emits

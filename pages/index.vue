@@ -66,7 +66,7 @@
               chosen-class="chosen"
               drag-class="drag"
               handle=".widget-menu-bar"
-              @change="handleDragChange($event, pane.id)"
+              @change="handleDragChange"
             >
               <!-- #header -->
               <template #header> </template>
@@ -102,11 +102,7 @@
       <!-- RSS設定モーダル -->
       <RssSettingsModal
         :show="activeModal === 'rss'"
-        :widget-data="
-          activeModal === 'rss'
-            ? { ...editingWidgetData, paneId: editingPaneId }
-            : null
-        "
+        :widget-data="rssWidgetData"
         :available-fonts="availableFonts"
         @close="closeModal"
         @save="handleSaveRssSettings"
@@ -114,11 +110,7 @@
       <!-- メモ設定モーダル -->
       <MemoSettingsModal
         :show="activeModal === 'memo'"
-        :widget-data="
-          activeModal === 'memo'
-            ? { ...editingWidgetData, paneId: editingPaneId }
-            : null
-        "
+        :widget-data="memoWidgetData"
         :available-fonts="availableFonts"
         @close="closeModal"
         @save="handleSaveMemoSettings"
@@ -126,11 +118,7 @@
       <!-- カレンダー設定モーダル -->
       <CalendarSettingsModal
         :show="activeModal === 'calendar'"
-        :widget-data="
-          activeModal === 'calendar'
-            ? { ...editingWidgetData, paneId: editingPaneId }
-            : null
-        "
+        :widget-data="calendarWidgetData"
         @close="closeModal"
         @save="handleSaveCalendarSettings"
       />
@@ -173,10 +161,15 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted } from 'vue';
+  import { onMounted, computed } from 'vue';
   import { Splitpanes, Pane } from 'splitpanes';
   import draggable from 'vuedraggable';
   import { AVAILABLE_FONTS } from '~/constants';
+  import type {
+    NoteWidgetWithPane,
+    RssWidgetWithPane,
+    CalendarWidgetWithPane,
+  } from '~/types';
   import RssSettingsModal from '~/components/RssSettingsModal.vue';
   import MemoSettingsModal from '~/components/MemoSettingsModal.vue';
   import CalendarSettingsModal from '~/components/CalendarSettingsModal.vue';
@@ -248,6 +241,27 @@
   });
 
   const availableFonts = AVAILABLE_FONTS;
+
+  // --- モーダルへ渡す型安全なウィジェットデータ (activeModal と型を連動させる) ---
+  // editingWidgetData は全ウィジェット型の union だが、activeModal と実行時には連動している。
+  // ここで型ガードを通して各モーダル専用の型に絞り込む。
+  const rssWidgetData = computed<RssWidgetWithPane | null>(() => {
+    const w = activeModal.value === 'rss' ? editingWidgetData.value : null;
+    return w && w.type === 'rss' ? { ...w, paneId: editingPaneId.value } : null;
+  });
+  const memoWidgetData = computed<NoteWidgetWithPane | null>(() => {
+    const w = activeModal.value === 'memo' ? editingWidgetData.value : null;
+    return w && w.type === 'note'
+      ? { ...w, paneId: editingPaneId.value }
+      : null;
+  });
+  const calendarWidgetData = computed<CalendarWidgetWithPane | null>(() => {
+    const w =
+      activeModal.value === 'calendar' ? editingWidgetData.value : null;
+    return w && w.type === 'calendar'
+      ? { ...w, paneId: editingPaneId.value }
+      : null;
+  });
 
   // --- onMounted: データロード ---
   onMounted(async () => {

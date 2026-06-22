@@ -44,7 +44,7 @@ export function useWidgetModal(options: {
   const editingWidgetData = ref<
     NoteWidget | RssWidget | CalendarWidget | null
   >(null);
-  const editingPaneId = ref<string | null>(null);
+  const editingPaneId = ref<string | undefined>(undefined);
   const widgetToDelete = ref<{
     widgetId: string;
     paneId: string;
@@ -90,7 +90,7 @@ export function useWidgetModal(options: {
   function closeModal() {
     activeModal.value = null;
     editingWidgetData.value = null;
-    editingPaneId.value = null;
+    editingPaneId.value = undefined;
     widgetToDelete.value = null;
   }
 

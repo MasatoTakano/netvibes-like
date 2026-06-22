@@ -26,19 +26,27 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, nextTick, watch, computed } from 'vue';
+  import { ref, nextTick, computed } from 'vue';
   import DOMPurify from 'dompurify';
+  import { URL_SHORTEN_CUTOFF_LENGTH } from '~/constants';
 
   // --- Props ---
-  const props = defineProps({
-    id: { type: String, required: true },
-    content: { type: String, required: true },
-    title: { type: String, default: '' },
-    fontFamily: { type: String, default: null }, // デフォルト値
-    fontSize: { type: Number, default: null }, // デフォルト値
-  });
+  const props = withDefaults(
+    defineProps<{
+      id: string;
+      content: string;
+      title?: string;
+      fontFamily?: string | null; // null = グローバル設定を使う
+      fontSize?: number | null;
+    }>(),
+    {
+      title: '',
+      fontFamily: null,
+      fontSize: null,
+    },
+  );
 
-  const urlCutoffLength = 40;
+  const urlCutoffLength = URL_SHORTEN_CUTOFF_LENGTH;
 
   // --- Emits ---
   const emit = defineEmits(['update:content']);
@@ -128,16 +136,6 @@
   const escapeHtmlAttribute = (unsafe: string): string => {
     return escapeHtml(unsafe).replace(/`/g, '&#096;');
   };
-
-  watch(
-    () => props.content,
-    (newContent) => {
-      if (!isEditing.value) {
-        // ここで処理する必要がない
-      }
-    },
-    { immediate: true },
-  );
 
   // 編集開始（通常表示エリアクリック時）
   const startEditingOnClick = (event: MouseEvent) => {
@@ -234,16 +232,6 @@
       finishEditing();
     }
   };
-
-  // props.content が外部から変更された場合（例：他のクライアントからの更新など）
-  // 編集中でなければ表示を更新する
-  watch(
-    () => props.content,
-    (newContent) => {
-      if (!isEditing.value) {
-      }
-    },
-  );
 </script>
 
 <style scoped>

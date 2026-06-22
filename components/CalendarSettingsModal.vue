@@ -40,6 +40,7 @@
   import { ref, reactive, watch } from 'vue';
   import BaseModal from './BaseModal.vue';
   import { useI18n } from 'vue-i18n';
+  import type { CalendarWidgetWithPane, CalendarSettingsPayload } from '~/types';
 
   const { t } = useI18n();
 
@@ -47,7 +48,7 @@
   const props = defineProps({
     show: { type: Boolean, required: true },
     widgetData: {
-      type: Object as PropType<CalendarWidget | null>,
+      type: Object as () => CalendarWidgetWithPane | null,
       default: null,
     },
   });
@@ -55,14 +56,7 @@
   // --- Emits ---
   const emit = defineEmits<{
     (e: 'close'): void;
-    (
-      e: 'save',
-      settings: {
-        widgetId: string;
-        paneId: string;
-        settings: { iframeTag: string };
-      },
-    ): void;
+    (e: 'save', payload: CalendarSettingsPayload): void;
   }>();
 
   // --- State ---
@@ -107,14 +101,6 @@
   const close = () => {
     emit('close');
   };
-
-  // --- Type Definition ---
-  interface CalendarWidget {
-    id: string;
-    paneId: string;
-    type: 'calendar';
-    iframeTag: string;
-  }
 </script>
 
 <style scoped>

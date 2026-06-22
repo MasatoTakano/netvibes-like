@@ -100,14 +100,15 @@
     DEFAULT_RSS_ITEM_COUNT,
     DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
   } from '~/constants';
+  import type { RssWidgetWithPane } from '~/types';
 
   const { t } = useI18n();
 
   // 親から渡される Props
   const props = defineProps({
     show: { type: Boolean, required: true },
-    widgetData: { type: Object as () => RssWidget | null, default: null }, // 編集対象ウィジェットデータ
-    availableFonts: { type: Array as () => string[], default: () => [] }, // フォントリスト
+    widgetData: { type: Object as () => RssWidgetWithPane | null, default: null }, // 編集対象ウィジェットデータ
+    availableFonts: { type: Array as () => readonly string[], default: () => [] }, // フォントリスト
   });
 
   // 親へ通知する Emits
@@ -197,19 +198,6 @@
   const close = () => {
     emit('close');
   };
-
-  // RssWidget 型定義 (インポートするか、ここで定義)
-  interface RssWidget {
-    id: string;
-    paneId?: string; // 親から渡す際に付与する必要あり
-    type: 'rss';
-    feedUrl: string;
-    itemCount: number;
-    feedTitle?: string;
-    fontFamily?: string;
-    fontSize?: number;
-    updateIntervalMinutes?: number;
-  }
 </script>
 
 <style scoped>

@@ -51,44 +51,39 @@
     DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
   } from '~/constants';
   import { useFetch } from '#app';
+  import type { FeedData } from '~/types';
 
   // --- Props ---
-  const props = defineProps({
-    id: { type: String, required: true },
-    feedUrl: { type: String, required: true },
-    itemCount: { type: Number, default: DEFAULT_RSS_ITEM_COUNT },
-    fontFamily: { type: String, default: DEFAULT_RSS_FONT_FAMILY }, // フォントファミリ
-    fontSize: { type: Number, default: DEFAULT_RSS_FONT_SIZE }, // フォントサイズ
-    updateIntervalMinutes: {
-      type: Number as () => number | null,
-      default: DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
+  const props = withDefaults(
+    defineProps<{
+      id: string;
+      feedUrl: string;
+      itemCount?: number;
+      fontFamily?: string | null; // null = グローバル設定を使う
+      fontSize?: number | null;
+      updateIntervalMinutes?: number | null; // null = 自動更新しない
+      titleMaxLength?: number;
+    }>(),
+    {
+      itemCount: DEFAULT_RSS_ITEM_COUNT,
+      fontFamily: DEFAULT_RSS_FONT_FAMILY,
+      fontSize: DEFAULT_RSS_FONT_SIZE,
+      updateIntervalMinutes: DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
+      titleMaxLength: 100,
     },
-    titleMaxLength: { type: Number, default: 100 }, // タイトルを省略するまでの最大文字数
-  });
+  );
 
   // --- Emits (title更新用イベントを追加) ---
   const emit = defineEmits(['update:title']);
-
-  // --- 型定義 (APIレスポンスとrss-parserの型を参考に) ---
-  interface RssItem {
-    title?: string;
-    link?: string;
-    pubDate?: string;
-    contentSnippet?: string; // 概要など
-    guid?: string;
-    // 他にも isoDate など、必要に応じて追加
-  }
-  interface FeedData {
-    title?: string;
-    link?: string;
-    items: RssItem[];
-  }
 
   // --- State ---
   // useFetch の結果を保持するための ref
   const feedData = ref<FeedData | null>(null);
   const pending = ref(false);
-  const error = ref<Error | null>(null); // H3Error を含む可能性
+  // useFetch の返す H3Error (data.statusMessage 等を持つ) と、通常の Error 両方が入り得る。
+  // 標準 Error 型には data がないため、テンプレートでの error.data アクセスに備えた構造型。
+  type RssFeedError = { message?: string; data?: { message?: string } };
+  const error = ref<RssFeedError | null>(null);
   const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
 
   // --- Computed ---

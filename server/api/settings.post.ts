@@ -4,9 +4,11 @@ import { z } from 'zod';
 import { prisma } from '~/server/utils/prisma';
 import { requireSession } from '~/server/utils/auth';
 
+// --- フォント設定のバリデーションスキーマ ---
+// fontFamily は CSS に渡されるため長さ上限を設け、fontSize は表示可能な範囲に制限する。
 const fontSettingsSchema = z.object({
-  fontFamily: z.string(),
-  fontSize: z.number(),
+  fontFamily: z.string().min(1).max(100),
+  fontSize: z.number().int().min(6).max(72),
 });
 
 export default defineEventHandler(async (event) => {
