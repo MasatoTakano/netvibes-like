@@ -80,7 +80,8 @@ const layoutSchema = z.array(paneSchema).superRefine((panes, ctx) => {
 });
 
 export default defineEventHandler(async (event) => {
-  const { userId } = await requireSession(event);
+  const { user } = await requireSession(event);
+  const userId = user.id;
 
   const rawBody = await readBody(event);
 

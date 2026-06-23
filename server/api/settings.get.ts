@@ -6,7 +6,8 @@ import { DEFAULT_GLOBAL_SETTINGS } from '~/constants';
 import type { FontSettings, GlobalSettings } from '~/types';
 
 export default defineEventHandler(async (event): Promise<FontSettings> => {
-  const { userId } = await requireSession(event);
+  const { user } = await requireSession(event);
+  const userId = user.id;
 
   try {
     const settingRecord = await prisma.setting.findUnique({

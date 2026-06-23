@@ -28,9 +28,6 @@ FROM node:23-alpine AS runtime
 WORKDIR /app
 RUN apk add --no-cache openssl
 
-# 永続化ディレクトリを作成し、node ユーザーで書き込めるようにする
-RUN mkdir -p /app/.data && chown node:node /app/.data
-
 COPY --from=builder --chown=node:node /app/package*.json ./
 RUN npm install --production
 COPY --from=builder --chown=node:node /app/.output ./.output
@@ -38,7 +35,7 @@ COPY --from=builder --chown=node:node /app/prisma/schema.prisma ./prisma/schema.
 COPY --from=builder --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
 
 # .env はイメージに焼き込まない。実行時に docker-compose.yml の env_file で注入する。
-RUN chown -R node:node /app/.output /app/node_modules /app/prisma /app/.data
+RUN chown -R node:node /app/.output /app/node_modules /app/prisma
 USER node
 
 ENV NUXT_HOST=0.0.0.0

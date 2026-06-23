@@ -1,16 +1,16 @@
 // composables/useAuth.ts
-import { useState, navigateTo } from '#app';
+import { useState } from '#app';
 import { computed } from 'vue';
+import { authClient } from '~/lib/auth-client';
 
-// User 型定義
+// User 型定義（アプリ全体で使用）
 export interface User {
   userId: string;
   email: string;
-  name: string | null;
+  name: string;
 }
 
 export const useAuth = () => {
-  // useState はプラグインで設定された値を取得するだけ
   const user = useState<User | null>('user');
   const isLoggedIn = computed(() => !!user.value);
 
@@ -18,32 +18,54 @@ export const useAuth = () => {
     user.value = userData;
   };
 
-  // fetchUser はクライアントサイドで強制的に更新したい場合などに使う（任意）
-  const fetchUserClient = async () => {
-    // console.log('fetchUserClient called');
+  // サーバーからユーザー情報を取得
+  const fetchUser = async () => {
     try {
       const data = await $fetch<{ user: User | null }>('/api/user');
       user.value = data.user;
-    } catch (error) {
-      console.error('Failed to fetch user on client:', error);
+    } catch {
       user.value = null;
     }
   };
 
-  const logout = async () => {
-    try {
-      await $fetch('/api/logout', { method: 'POST' });
-      user.value = null;
-      await navigateTo('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
+  // Better Auth クライアント経由のログイン
+  const login = async (email: string, password: string) => {
+    const result = await authClient.signIn.email({ email, password });
+    if (result.error) {
+      throw result.error;
     }
+    await fetchUser();
+  };
+
+  // Better Auth クライアント経由のサインアップ
+  const signup = async (
+    email: string,
+    password: string,
+    name?: string,
+  ) => {
+    const result = await authClient.signUp.email({
+      email,
+      password,
+      name: name || email.split('@')[0],
+    });
+    if (result.error) {
+      throw result.error;
+    }
+  };
+
+  // Better Auth クライアント経由のログアウト
+  const logout = async () => {
+    await authClient.signOut();
+    user.value = null;
+    await navigateTo('/login');
   };
 
   return {
     user,
     isLoggedIn,
-    fetchUserClient, // 名前を変更 (任意)
+    fetchUser,
+    login,
+    signup,
     logout,
     setUserSession,
   };

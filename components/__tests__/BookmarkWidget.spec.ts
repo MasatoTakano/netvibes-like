@@ -66,13 +66,13 @@ describe('BookmarkWidget.vue', () => {
     const wrapper = mountWidget({ bookmarks: sampleBookmarks });
 
     // 確認オーバーレイは最初は表示されない
-    expect(wrapper.find('.bookmark-confirm-overlay').exists()).toBe(false);
+    expect(wrapper.find('.bookmark-delete-confirm').exists()).toBe(false);
 
     // × ボタンをクリック
     await wrapper.find('.bookmark-delete-btn').trigger('click');
 
-    // 確認オーバーレイが表示される
-    expect(wrapper.find('.bookmark-confirm-overlay').exists()).toBe(true);
+    // 確認UIが表示される
+    expect(wrapper.find('.bookmark-delete-confirm').exists()).toBe(true);
     expect(wrapper.text()).toContain('bookmarkWidget.confirmDelete');
   });
 
@@ -80,10 +80,10 @@ describe('BookmarkWidget.vue', () => {
     const wrapper = mountWidget({ bookmarks: sampleBookmarks });
 
     await wrapper.find('.bookmark-delete-btn').trigger('click');
-    expect(wrapper.find('.bookmark-confirm-overlay').exists()).toBe(true);
+    expect(wrapper.find('.bookmark-delete-confirm').exists()).toBe(true);
 
     await wrapper.find('.bookmark-confirm-no').trigger('click');
-    expect(wrapper.find('.bookmark-confirm-overlay').exists()).toBe(false);
+    expect(wrapper.find('.bookmark-delete-confirm').exists()).toBe(false);
     // ブックマークは削除されない
     expect(wrapper.findAll('.bookmark-item')).toHaveLength(2);
   });

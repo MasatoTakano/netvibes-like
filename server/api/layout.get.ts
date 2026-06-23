@@ -5,7 +5,8 @@ import { requireSession } from '~/server/utils/auth';
 import { defaultLayoutData } from '~/constants';
 
 export default defineEventHandler(async (event) => {
-  const { userId } = await requireSession(event);
+  const { user } = await requireSession(event);
+  const userId = user.id;
 
   try {
     const layoutRecord = await prisma.layout.findUnique({

@@ -50,29 +50,25 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
-  import { useRouter } from 'vue-router';
+  import { ref, computed } from 'vue';
+  import { useAuth } from '~/composables/useAuth';
+  import { navigateTo } from '#app';
 
   const { t } = useI18n();
-  const router = useRouter();
+  const { signup, fetchUser } = useAuth();
 
   // --- リアクティブな状態 ---
   const email = ref('');
   const password = ref('');
   const name = ref('');
   const isLoading = ref(false);
-  const error = ref<any>(null);
+  const error = ref<string | null>(null);
   const successMessage = ref<string | null>(null);
 
   // --- エラーメッセージの算出プロパティ ---
   const errorMessage = computed(() => {
     if (!error.value) return null;
-    // APIからのエラーメッセージを優先
-    if (error.value.data?.statusMessage) {
-      return error.value.data.statusMessage;
-    }
-    // その他のネットワークエラーなど
-    return t('common.error.generic');
+    return error.value;
   });
 
   // --- サインアップ処理 ---
@@ -82,33 +78,18 @@
     successMessage.value = null;
 
     try {
-      // --- APIリクエスト ---
-      const response = await $fetch('/api/signup', {
-        method: 'POST',
-        body: {
-          email: email.value,
-          password: password.value,
-          name: name.value || undefined,
-        },
-      });
+      // Better Auth 経由でサインアップ（autoSignIn: true なので自動ログインされる）
+      await signup(email.value, password.value, name.value || undefined);
 
-      // --- 成功処理 ---
-      if (response && response.success) {
-        successMessage.value = t('signup.success');
+      // 自動ログインされたセッションを取得して状態を更新
+      await fetchUser();
+      successMessage.value = t('signup.success');
 
-        // 成功したらログインページにリダイレクト（少し待ってから）
-        setTimeout(() => {
-          router.push('/login');
-        }, 500); // 0.5 秒待つ
-      } else {
-        // APIが成功レスポンスで success: false を返す場合（通常はエラーでキャッチされるはず）
-        throw new Error('Signup failed unexpectedly.');
-      }
+      // メインページへ遷移
+      await navigateTo('/');
     } catch (err: any) {
-      // --- エラー処理 ---
       console.error('[ERROR] Signup failed:', err);
-      // エラーをエラー表示領域に表示
-      error.value = err;
+      error.value = err?.message || t('common.error.generic');
     } finally {
       isLoading.value = false;
     }

@@ -1,4 +1,25 @@
 services:
+  # --- PostgreSQL (データベース) ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: memo-app-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: memoapp
+      POSTGRES_PASSWORD: memoapp_dev
+      POSTGRES_DB: memoapp
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U memoapp -d memoapp']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # --- Traefik (リバースプロキシ & HTTPS化) ---
   traefik:
     # image: traefik:latest
@@ -47,11 +68,12 @@ services:
     build:
       context: .
       args:
-        DATABASE_URL_BUILD: 'file:/app/.data/dev.db'
+        DATABASE_URL_BUILD: 'postgresql://memoapp:memoapp_dev@postgres:5432/memoapp'
     env_file:
       - .env.docker
-    volumes:
-      - ./.data:/app/.data
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
     # 【重要】 labels はここ（services > nuxt-app の直下）に書きます
@@ -65,7 +87,15 @@ services:
       - internal
 
   # --- Networks ---
-  # internal: traefik ↔ nuxt-app 間通信用。外部公開は traefik の ports のみ。
+  # internal: traefik ↔ nuxt-app ↔ postgres 間通信用。外部公開は traefik の ports のみ。
 networks:
   internal:
     driver: bridge
+
+# --- Volumes ---
+volumes:
+  pgdata:
+    # 既存のPostgreSQLデータボリュームを明示的に使用する。
+    # SQLite→PostgreSQL移行済みデータが入っている memo-app-pgdata を参照。
+    name: memo-app-pgdata
+    external: true

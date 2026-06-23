@@ -41,25 +41,22 @@
 
 <script setup lang="ts">
   import { ref, computed } from 'vue';
-  import { useAuth } from '~/composables/useAuth'; // インポートは不要なはず -> 削除
+  import { useAuth } from '~/composables/useAuth';
   import { navigateTo } from '#app';
 
   const { t } = useI18n();
-  const { setUserSession } = useAuth();
+  const { login } = useAuth();
 
   // --- リアクティブな状態 ---
   const email = ref('');
   const password = ref('');
   const isLoading = ref(false);
-  const error = ref<any>(null);
+  const error = ref<string | null>(null);
 
   // --- エラーメッセージ ---
   const errorMessage = computed(() => {
     if (!error.value) return null;
-    if (error.value.data?.statusMessage) {
-      return error.value.data.statusMessage;
-    }
-    return t('common.error.generic');
+    return error.value;
   });
 
   // --- ログイン処理 ---
@@ -68,32 +65,12 @@
     error.value = null;
 
     try {
-      // --- APIリクエスト ---
-      const response = await $fetch<{ success: true; user: User }>(
-        '/api/login',
-        {
-          // 現状のAPIの場合
-          method: 'POST',
-          body: {
-            email: email.value,
-            password: password.value,
-          },
-        },
-      );
-
-      // --- 成功処理 ---
-      if (response.success === true && response.user) {
-        setUserSession(response.user);
-        // 状態更新後にナビゲーション
-        await navigateTo('/');
-      } else {
-        // API が成功しなかった場合 (通常はエラーになるはずだが念のため)
-        throw new Error('Login failed: Invalid response from server.');
-      }
+      await login(email.value, password.value);
+      await navigateTo('/');
     } catch (err: any) {
-      // --- エラー処理 ---
       console.error('[ERROR] Login failed:', err);
-      error.value = err;
+      // Better Auth クライアントのエラーは { message, code } 形式
+      error.value = err?.message || t('common.error.generic');
     } finally {
       isLoading.value = false;
     }
@@ -103,13 +80,9 @@
   useHead({
     title: t('login.title'),
   });
-
-  // --- レイアウト指定 ---
 </script>
 
 <style scoped>
-  /* サインアップページと共通のスタイルを使えるように */
-  /* 必要であれば signup.vue から .auth-page などのスタイルを共通のCSSファイルに移動 */
   .auth-page {
     max-width: 400px;
     margin: 50px auto;

@@ -12,7 +12,8 @@ const fontSettingsSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  const { userId } = await requireSession(event);
+  const { user } = await requireSession(event);
+  const userId = user.id;
 
   const rawBody = await readBody(event);
 
