@@ -34,6 +34,23 @@ const widgetSchema = z.discriminatedUnion('type', [
     iframeTag: z.string(),
     isCollapsed: z.boolean().optional(),
   }),
+  z.object({
+    id: z.string(),
+    type: z.literal('bookmark'),
+    title: z.string().optional(),
+    bookmarks: z.array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        description: z.string().optional(),
+        url: z.string(),
+      }),
+    ),
+    fontFamily: z.string().nullable().optional(),
+    fontSize: z.number().nullable().optional(),
+    columns: z.number().min(1).max(4).nullable().optional(),
+    isCollapsed: z.boolean().optional(),
+  }),
 ]);
 
 const paneSchema = z.object({

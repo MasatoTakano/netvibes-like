@@ -82,6 +82,7 @@
                   @confirm-remove="confirmRemoveWidget"
                   @update:note-content="updateNoteContent"
                   @update:rss-title="updateRssWidgetTitle"
+                  @update:bookmarks="updateBookmarks"
                 />
               </template>
 
@@ -121,6 +122,14 @@
         :widget-data="calendarWidgetData"
         @close="closeModal"
         @save="handleSaveCalendarSettings"
+      />
+      <!-- ブックマーク設定モーダル -->
+      <BookmarkSettingsModal
+        :show="activeModal === 'bookmark'"
+        :widget-data="bookmarkWidgetData"
+        :available-fonts="availableFonts"
+        @close="closeModal"
+        @save="handleSaveBookmarkSettings"
       />
       <!-- 全体設定モーダル -->
       <GlobalSettingsModal
@@ -169,10 +178,12 @@
     NoteWidgetWithPane,
     RssWidgetWithPane,
     CalendarWidgetWithPane,
+    BookmarkWidgetWithPane,
   } from '~/types';
   import RssSettingsModal from '~/components/RssSettingsModal.vue';
   import MemoSettingsModal from '~/components/MemoSettingsModal.vue';
   import CalendarSettingsModal from '~/components/CalendarSettingsModal.vue';
+  import BookmarkSettingsModal from '~/components/BookmarkSettingsModal.vue';
   import GlobalSettingsModal from '~/components/GlobalSettingsModal.vue';
   import AddWidgetModal from '~/components/AddWidgetModal.vue';
   import ConfirmDeleteModal from '~/components/ConfirmDeleteModal.vue';
@@ -193,9 +204,11 @@
     addNoteWidget,
     addRssWidget,
     addCalendarWidget,
+    addBookmarkWidget,
     removeWidget,
     updateNoteContent,
     updateRssWidgetTitle,
+    updateBookmarks,
     toggleCollapse,
     handleDragChange,
   } = useLayout();
@@ -227,6 +240,7 @@
     handleSaveRssSettings,
     handleSaveMemoSettings,
     handleSaveCalendarSettings,
+    handleSaveBookmarkSettings,
     handleSaveGlobalSettings,
   } = useWidgetModal({
     panesData,
@@ -234,6 +248,7 @@
     addNoteWidget,
     addRssWidget,
     addCalendarWidget,
+    addBookmarkWidget,
     removeWidget,
     globalSettings,
     saveGlobalSettingsDebounced,
@@ -259,6 +274,13 @@
     const w =
       activeModal.value === 'calendar' ? editingWidgetData.value : null;
     return w && w.type === 'calendar'
+      ? { ...w, paneId: editingPaneId.value }
+      : null;
+  });
+  const bookmarkWidgetData = computed<BookmarkWidgetWithPane | null>(() => {
+    const w =
+      activeModal.value === 'bookmark' ? editingWidgetData.value : null;
+    return w && w.type === 'bookmark'
       ? { ...w, paneId: editingPaneId.value }
       : null;
   });

@@ -2,7 +2,7 @@
 // レイアウトデータのCRUD、ウィジェット操作、ロード/保存を管理
 
 import { ref } from 'vue';
-import type { PaneData, NoteWidget, RssWidget, CalendarWidget } from '~/types';
+import type { PaneData, NoteWidget, RssWidget, CalendarWidget, BookmarkWidget, BookmarkItem } from '~/types';
 import {
   DEFAULT_NOTE_FONT_FAMILY,
   DEFAULT_NOTE_FONT_SIZE,
@@ -10,6 +10,9 @@ import {
   DEFAULT_RSS_FONT_SIZE,
   DEFAULT_RSS_ITEM_COUNT,
   DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
+  DEFAULT_BOOKMARK_FONT_FAMILY,
+  DEFAULT_BOOKMARK_FONT_SIZE,
+  DEFAULT_BOOKMARK_COLUMNS,
 } from '~/constants';
 import { useDebounce } from './useDebounce';
 
@@ -170,6 +173,28 @@ export function useLayout() {
     }
   }
 
+  function addBookmarkWidget(paneId: string) {
+    const targetPane = panesData.value.find((p) => p.id === paneId);
+    if (targetPane) {
+      const newWidget: BookmarkWidget = {
+        id: crypto.randomUUID(),
+        type: 'bookmark',
+        title: '',
+        bookmarks: [],
+        fontFamily: DEFAULT_BOOKMARK_FONT_FAMILY,
+        fontSize: DEFAULT_BOOKMARK_FONT_SIZE,
+        columns: DEFAULT_BOOKMARK_COLUMNS,
+        isCollapsed: false,
+      };
+      targetPane.widgets.push(newWidget);
+      saveLayoutDebounced();
+    } else {
+      console.warn(
+        `>>> [ERROR] [Client] Could not find pane with id ${paneId} to add Bookmark widget.`,
+      );
+    }
+  }
+
   function removeWidget(widgetId: string, paneId: string) {
     const targetPane = panesData.value.find((p) => p.id === paneId);
     if (targetPane) {
@@ -227,6 +252,31 @@ export function useLayout() {
     }
   }
 
+  function updateBookmarks(widgetId: string, newBookmarks: BookmarkItem[]) {
+    if (isLoading.value) {
+      return;
+    }
+
+    let found = false;
+    for (const pane of panesData.value) {
+      const widgetIndex = pane.widgets.findIndex(
+        (widget) => widget.id === widgetId && widget.type === 'bookmark',
+      );
+      if (widgetIndex !== -1) {
+        (pane.widgets[widgetIndex] as BookmarkWidget).bookmarks = newBookmarks;
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      saveLayoutDebounced();
+    } else {
+      console.warn(
+        `>>> [ERROR] [Client] Attempted to update bookmarks for unknown widget id: ${widgetId}`,
+      );
+    }
+  }
+
   function toggleCollapse(widgetId: string, paneId: string) {
     if (isLoading.value) {
       return;
@@ -255,9 +305,11 @@ export function useLayout() {
     addNoteWidget,
     addRssWidget,
     addCalendarWidget,
+    addBookmarkWidget,
     removeWidget,
     updateNoteContent,
     updateRssWidgetTitle,
+    updateBookmarks,
     toggleCollapse,
     handleDragChange,
   };

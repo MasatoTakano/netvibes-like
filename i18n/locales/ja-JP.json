@@ -12,6 +12,7 @@
     "save": "保存",
     "cancel": "キャンセル",
     "errorFontSize": "8～72の整数でフォントサイズを入力してください。",
+    "errorColumns": "1～4の整数で列数を入力してください。",
     "email": "メールアドレス",
     "password": "パスワード",
     "name": "名前",
@@ -55,7 +56,8 @@
     "types": {
       "note": "メモ",
       "rss": "RSSフィード",
-      "googleCalendar": "Googleカレンダー"
+      "googleCalendar": "Googleカレンダー",
+      "bookmark": "ブックマーク"
     }
   },
   "globalSettings": {
@@ -75,6 +77,7 @@
     "memo": "メモ",
     "rss": "RSSフィード",
     "googleCalendar": "Googleカレンダー",
+    "bookmark": "ブックマーク",
     "rssUrlPrompt": "RSSフィードURL:",
     "addButton": "ウィジェットを追加",
     "errorInvalidUrl": "有効なURLを入力してください (http:// または https://)。"
@@ -119,5 +122,34 @@
   },
   "calendarWidget": {
     "noIframe": "ウィジェット設定でGoogleカレンダーのiframeタグを設定してください。"
+  },
+  "bookmarkSettings": {
+    "title": "ブックマークウィジェット設定",
+    "widgetTitle": "タイトル:",
+    "widgetTitlePlaceholder": "ブックマークのタイトル（任意）",
+    "columns": "列数:",
+    "columnsHint": "1〜4列で表示します（デフォルト: 1）",
+    "errorColumns": "列数は1〜4の整数で入力してください。"
+  },
+  "bookmarkWidget": {
+    "urlPlaceholder": "URLを入力してください...",
+    "addButton": "追加",
+    "empty": "ブックマークがありません。URLを入力して追加してください。",
+    "errorInvalidUrl": "有効なURLを入力してください (http:// または https://)。",
+    "confirmDelete": "このブックマークを削除しますか？",
+    "confirmDeleteYes": "削除する",
+    "confirmDeleteNo": "キャンセル"
+  },
+  "bookmarkItemModal": {
+    "addTitle": "ブックマーク追加",
+    "editTitle": "ブックマーク編集",
+    "titleLabel": "表示文:",
+    "titlePlaceholder": "例: GitHub",
+    "descriptionLabel": "説明:",
+    "descriptionPlaceholder": "このブックマークの説明（任意）",
+    "urlLabel": "URL:",
+    "urlPlaceholder": "https://example.com",
+    "addButton": "追加",
+    "saveButton": "保存"
   }
 }

@@ -12,6 +12,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "errorFontSize": "Please enter an integer font size between 8 and 72.",
+    "errorColumns": "Please enter an integer column count between 1 and 4.",
     "email": "Email",
     "password": "Password",
     "name": "Name",
@@ -55,7 +56,8 @@
     "types": {
       "note": "Memo",
       "rss": "RSS Feed",
-      "googleCalendar": "Google Calendar"
+      "googleCalendar": "Google Calendar",
+      "bookmark": "Bookmarks"
     }
   },
   "globalSettings": {
@@ -75,6 +77,7 @@
     "memo": "Memo Note",
     "rss": "RSS Feed",
     "googleCalendar": "Google Calendar",
+    "bookmark": "Bookmarks",
     "rssUrlPrompt": "RSS Feed URL:",
     "addButton": "Add Widget",
     "errorInvalidUrl": "Please enter a valid URL starting with http:// or https://."
@@ -119,5 +122,34 @@
   },
   "calendarWidget": {
     "noIframe": "Please set your Google Calendar iframe tag in the widget settings."
+  },
+  "bookmarkSettings": {
+    "title": "Bookmark Widget Settings",
+    "widgetTitle": "Title:",
+    "widgetTitlePlaceholder": "Bookmark title (optional)",
+    "columns": "Columns:",
+    "columnsHint": "Display in 1-4 columns (default: 1)",
+    "errorColumns": "Columns must be an integer from 1 to 4."
+  },
+  "bookmarkWidget": {
+    "urlPlaceholder": "Enter URL...",
+    "addButton": "Add",
+    "empty": "No bookmarks. Enter a URL to add one.",
+    "errorInvalidUrl": "Please enter a valid URL (http:// or https://).",
+    "confirmDelete": "Delete this bookmark?",
+    "confirmDeleteYes": "Delete",
+    "confirmDeleteNo": "Cancel"
+  },
+  "bookmarkItemModal": {
+    "addTitle": "Add Bookmark",
+    "editTitle": "Edit Bookmark",
+    "titleLabel": "Display Text:",
+    "titlePlaceholder": "e.g., GitHub",
+    "descriptionLabel": "Description:",
+    "descriptionPlaceholder": "Description for this bookmark (optional)",
+    "urlLabel": "URL:",
+    "urlPlaceholder": "https://example.com",
+    "addButton": "Add",
+    "saveButton": "Save"
   }
 }

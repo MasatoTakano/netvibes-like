@@ -42,6 +42,10 @@ export const DEFAULT_RSS_FONT_FAMILY = DEFAULT_GLOBAL_SETTINGS.fontFamily;
 export const DEFAULT_RSS_FONT_SIZE = DEFAULT_GLOBAL_SETTINGS.fontSize;
 export const DEFAULT_RSS_ITEM_COUNT = 5; // 表示するアイテム数
 export const DEFAULT_RSS_UPDATE_INTERVAL_MINUTES = 15; // 更新間隔(分単位)
+export const DEFAULT_BOOKMARK_FONT_FAMILY = DEFAULT_GLOBAL_SETTINGS.fontFamily;
+export const DEFAULT_BOOKMARK_FONT_SIZE = DEFAULT_GLOBAL_SETTINGS.fontSize;
+export const DEFAULT_BOOKMARK_COLUMNS = 1; // デフォルト列数
+export const MAX_BOOKMARK_COLUMNS = 4; // 最大列数
 
 // --- メモのURL短縮表示 ---
 // メモ内のURLがこの文字数を超える場合、ドメイン + 末尾一部の短縮形式で表示する

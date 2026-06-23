@@ -14,9 +14,15 @@
   --widget-menu-border-default: #e0e0e0;
   --widget-menu-note-bg: #fffacd;
   --widget-menu-note-border: #ffe58f;
+  --widget-menu-note-hover: #fff5b4;
   --widget-menu-rss-bg: #e9ecef;
   --widget-menu-rss-border: #ced4da;
+  --widget-menu-rss-hover: #dee2e6;
+  --widget-menu-bookmark-bg: #e8f5e9;
+  --widget-menu-bookmark-border: #a5d6a7;
+  --widget-menu-bookmark-hover: #d4ecd8;
   --widget-text-color: #333;
+  --widget-text-color-secondary: #6c757d;
   --link-color: #007bff;
   --button-primary-bg: #007bff;
   --button-primary-text: white;
@@ -69,9 +75,15 @@ html[data-theme='dark'] {
   --widget-menu-border-default: #484848;
   --widget-menu-note-bg: #4a4a2a; /* 暗めの黄色 */
   --widget-menu-note-border: #606035;
+  --widget-menu-note-hover: #5a5a35;
   --widget-menu-rss-bg: #383c40; /* 暗めのグレー */
   --widget-menu-rss-border: #4d5154;
+  --widget-menu-rss-hover: #454a4e;
+  --widget-menu-bookmark-bg: #2a3a2e; /* 暗めの緑 */
+  --widget-menu-bookmark-border: #3d5243;
+  --widget-menu-bookmark-hover: #344038;
   --widget-text-color: #cccccc;
+  --widget-text-color-secondary: #999;
   --link-color: #58a6ff; /* 明るい青 */
   --button-primary-bg: #238636; /* GitHub風緑 */
   --button-primary-text: white;

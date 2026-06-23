@@ -3,7 +3,7 @@
 // --- 基本ウィジェット型 ---
 export interface WidgetBase {
   id: string;
-  type: 'note' | 'rss' | 'calendar';
+  type: 'note' | 'rss' | 'calendar' | 'bookmark';
 }
 
 // --- メモウィジェット型 ---
@@ -35,17 +35,37 @@ export interface CalendarWidget extends WidgetBase {
   isCollapsed?: boolean;
 }
 
+// --- ブックマークアイテム型 ---
+export interface BookmarkItem {
+  id: string;
+  title: string; // 表示文（タイトル）
+  description?: string; // 説明（任意）
+  url: string;
+}
+
+// --- ブックマークウィジェット型 ---
+export interface BookmarkWidget extends WidgetBase {
+  type: 'bookmark';
+  title?: string; // ウィジェットタイトル
+  bookmarks: BookmarkItem[]; // ブックマークのリスト
+  fontFamily?: string | null; // フォントファミリー (null許容)
+  fontSize?: number | null; // フォントサイズ (null許容)
+  columns?: number | null; // 表示列数 (1〜4, null許容)
+  isCollapsed?: boolean;
+}
+
 // --- 設定モーダル用のウィジェット型 (ウィジェット + paneId) ---
 // モーダルには親 (index.vue) から { ...widget, paneId } の形で渡されるため、
 // paneId を併せ持つ型をここで一元管理する（各モーダルでのローカル定義重複を防ぐ）。
 export type NoteWidgetWithPane = NoteWidget & { paneId?: string };
 export type RssWidgetWithPane = RssWidget & { paneId?: string };
 export type CalendarWidgetWithPane = CalendarWidget & { paneId?: string };
+export type BookmarkWidgetWithPane = BookmarkWidget & { paneId?: string };
 
 // --- ペインデータ型 ---
 export interface PaneData {
   id: string;
-  widgets: (NoteWidget | RssWidget | CalendarWidget)[];
+  widgets: (NoteWidget | RssWidget | CalendarWidget | BookmarkWidget)[];
   size: number; // 初期表示用
 }
 
@@ -98,4 +118,10 @@ export interface CalendarSettingsPayload {
   widgetId: string;
   paneId?: string;
   settings: Pick<CalendarWidget, 'iframeTag'>;
+}
+
+export interface BookmarkSettingsPayload {
+  widgetId: string;
+  paneId?: string;
+  settings: Pick<BookmarkWidget, 'title' | 'fontFamily' | 'fontSize' | 'columns'>;
 }

@@ -5,6 +5,7 @@
       :class="{
         'widget-menu-bar--note': widget.type === 'note',
         'widget-menu-bar--rss': widget.type === 'rss',
+        'widget-menu-bar--bookmark': widget.type === 'bookmark',
       }"
     >
       <span class="widget-collapse-toggle" @click.stop="emitToggleCollapse">
@@ -16,7 +17,8 @@
           v-if="
             widget.type === 'note' ||
             widget.type === 'rss' ||
-            widget.type === 'calendar'
+            widget.type === 'calendar' ||
+            widget.type === 'bookmark'
           "
           class="widget-action-icon settings-icon"
           :title="t('widget.settings')"
@@ -62,23 +64,34 @@
         :iframe-tag="widget.iframeTag"
         class="draggable-widget-content"
       />
+      <BookmarkWidgetComponent
+        v-else-if="widget.type === 'bookmark'"
+        :id="widget.id"
+        :bookmarks="widget.bookmarks"
+        :font-family="widget.fontFamily"
+        :font-size="widget.fontSize"
+        :columns="widget.columns"
+        class="draggable-widget-content"
+        @update:bookmarks="emitUpdateBookmarks"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import type { PropType } from 'vue';
-  import type { NoteWidget, RssWidget, CalendarWidget } from '~/types';
+  import type { NoteWidget, RssWidget, CalendarWidget, BookmarkWidget } from '~/types';
   import MemoNote from '~/components/MemoNote.vue'; // Passenden Pfad sicherstellen
   import RssReader from '~/components/RssReader.vue'; // Passenden Pfad sicherstellen
   import CalendarWidgetComponent from '~/components/CalendarWidget.vue';
+  import BookmarkWidgetComponent from '~/components/BookmarkWidget.vue';
 
   const { t } = useI18n(); // i18n を利用
 
   // --- Props ---
   const props = defineProps({
     widget: {
-      type: Object as PropType<NoteWidget | RssWidget | CalendarWidget>,
+      type: Object as PropType<NoteWidget | RssWidget | CalendarWidget | BookmarkWidget>,
       required: true,
     },
     paneId: {
@@ -94,7 +107,7 @@
       e: 'open-settings',
       widgetId: string,
       paneId: string,
-      widgetType: 'note' | 'rss' | 'calendar',
+      widgetType: 'note' | 'rss' | 'calendar' | 'bookmark',
     ): void;
     (e: 'confirm-remove', widgetId: string, paneId: string): void;
     (e: 'update:noteContent', widgetId: string, content: string): void; // メモ内容更新イベント
@@ -104,11 +117,16 @@
       paneId: string,
       title: string,
     ): void; // RSSタイトル更新イベント
+    (
+      e: 'update:bookmarks',
+      widgetId: string,
+      bookmarks: import('~/types').BookmarkItem[],
+    ): void; // ブックマーク更新イベント
   }>();
 
   // --- Methods ---
   const getWidgetTitle = (
-    widget: NoteWidget | RssWidget | CalendarWidget,
+    widget: NoteWidget | RssWidget | CalendarWidget | BookmarkWidget,
   ): string => {
     if (widget.type === 'note') {
       return widget.title || t('widget.types.note'); // i18n を使う
@@ -116,7 +134,9 @@
       // feedTitle があればそれ、なければデフォルト
       return widget.feedTitle || t('widget.types.rss'); // i18n を使う
     } else if (widget.type === 'calendar') {
-      return t('widget.types.googleCalendar');
+      return t('widget.types.googleCalendar'); // i18n を使う
+    } else if (widget.type === 'bookmark') {
+      return widget.title || t('widget.types.bookmark'); // i18n を使う
     }
     return t('widget.name'); // i18n を使う
   };
@@ -129,7 +149,8 @@
     if (
       props.widget.type === 'note' ||
       props.widget.type === 'rss' ||
-      props.widget.type === 'calendar'
+      props.widget.type === 'calendar' ||
+      props.widget.type === 'bookmark'
     ) {
       emit('open-settings', props.widget.id, props.paneId, props.widget.type);
     }
@@ -152,18 +173,27 @@
       emit('update:rssTitle', props.widget.id, props.paneId, newTitle);
     }
   };
+
+  const emitUpdateBookmarks = (
+    bookmarks: import('~/types').BookmarkItem[],
+  ) => {
+    // BookmarkWidget の場合のみ emit
+    if (props.widget.type === 'bookmark') {
+      emit('update:bookmarks', props.widget.id, bookmarks);
+    }
+  };
 </script>
 
 <style scoped>
   /* WidgetCard コンポーネント固有のスタイル */
   .widget-wrapper {
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
+    background-color: var(--widget-bg-color, #fff);
+    border: 1px solid var(--widget-border-color, #e0e0e0);
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* コンテンツのはみ出し防止と角丸のため */
+    overflow: hidden;
     box-sizing: border-box;
   }
 
@@ -172,14 +202,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #f8f9fa; /* デフォルトの背景色 */
-    border-bottom: 1px solid #e0e0e0;
-    cursor: grab; /* メニューバー全体をハンドルに */
+    background-color: var(--widget-menu-bg-default, #f8f9fa);
+    border-bottom: 1px solid var(--widget-menu-border-default, #e0e0e0);
+    cursor: grab;
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
-    padding: 2px 5px; /* 少し狭く調整 */
-    user-select: none; /* ドラッグ操作の邪魔にならないように */
+    padding: 2px 5px;
+    user-select: none;
   }
   .widget-menu-bar:active {
     cursor: grabbing;
@@ -187,42 +217,54 @@
 
   /* タイプごとのメニューバー背景色 */
   .widget-menu-bar--note {
-    background-color: #fffacd; /* 薄い黄色 */
-    border-bottom-color: #ffe58f;
+    background-color: var(--widget-menu-note-bg, #fffacd);
+    border-bottom-color: var(--widget-menu-note-border, #ffe58f);
   }
+
   .widget-menu-bar--note:hover {
-    background-color: #fff5b4;
+    background-color: var(--widget-menu-note-hover, #fff5b4);
   }
+
   .widget-menu-bar--rss {
-    background-color: #e9ecef; /* 薄いグレー */
-    border-bottom-color: #ced4da;
+    background-color: var(--widget-menu-rss-bg, #e9ecef);
+    border-bottom-color: var(--widget-menu-rss-border, #ced4da);
   }
+
   .widget-menu-bar--rss:hover {
-    background-color: #dee2e6;
+    background-color: var(--widget-menu-rss-hover, #dee2e6);
+  }
+
+  .widget-menu-bar--bookmark {
+    background-color: var(--widget-menu-bookmark-bg, #e8f5e9);
+    border-bottom-color: var(--widget-menu-bookmark-border, #a5d6a7);
+  }
+
+  .widget-menu-bar--bookmark:hover {
+    background-color: var(--widget-menu-bookmark-hover, #d4ecd8);
   }
 
   .widget-collapse-toggle {
     cursor: pointer;
-    padding: 4px 6px; /* クリック領域調整 */
+    padding: 4px 6px;
     font-size: 0.9em;
-    color: #6c757d;
-    margin-right: 6px; /* アイコンとタイトルの間 */
+    color: var(--widget-text-color-secondary, #6c757d);
+    margin-right: 6px;
     transition: color 0.2s ease;
     line-height: 1;
   }
   .widget-collapse-toggle:hover {
-    color: #343a40;
+    color: var(--widget-text-color, #343a40);
   }
 
   .widget-title {
     font-weight: bold;
-    font-size: 0.9em; /* 少し小さく */
+    font-size: 0.9em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-right: 10px;
-    flex-grow: 1; /* スペースを埋める */
-    color: #343a40;
+    flex-grow: 1;
+    color: var(--widget-text-color, #343a40);
   }
 
   .widget-actions {
@@ -233,22 +275,22 @@
   }
 
   .widget-action-icon {
-    color: #6c757d;
+    color: var(--widget-text-color-secondary, #6c757d);
     cursor: pointer;
-    font-size: 1em; /* アイコンサイズ調整 */
-    padding: 3px; /* クリック領域確保 */
+    font-size: 1em;
+    padding: 3px;
     border-radius: 3px;
     transition:
       background-color 0.2s ease,
       color 0.2s ease;
-    line-height: 1; /* 縦中央揃えのため */
+    line-height: 1;
   }
   .widget-action-icon:hover {
-    background-color: #e9ecef;
-    color: #343a40;
+    background-color: var(--theme-switcher-hover-bg, rgba(128, 128, 128, 0.1));
+    color: var(--widget-text-color, #343a40);
   }
   .settings-icon:hover {
-    color: #007bff;
+    color: var(--link-color, #007bff);
   }
   .remove-icon:hover {
     color: #dc3545;

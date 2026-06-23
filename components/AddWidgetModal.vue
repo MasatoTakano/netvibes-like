@@ -19,6 +19,12 @@
           >
             <span class="icon">📅</span> {{ $t('addWidget.googleCalendar') }}
           </button>
+          <button
+            class="button widget-type-button"
+            @click="selectType('bookmark')"
+          >
+            <span class="icon">🔗</span> {{ $t('addWidget.bookmark') }}
+          </button>
         </div>
 
         <!-- RSS選択時にURL入力欄を表示 -->
@@ -68,13 +74,13 @@
   const emit = defineEmits(['close', 'add']);
 
   // 内部状態
-  const selectedType = ref<'note' | 'rss' | 'calendar' | null>(null);
+  const selectedType = ref<'note' | 'rss' | 'calendar' | 'bookmark' | null>(null);
   const rssFeedUrl = ref('');
   const rssUrlError = ref<string | null>(null);
   const rssUrlInputRef = ref<HTMLInputElement | null>(null); // URL入力欄フォーカス用
 
   // ウィジェットタイプ選択
-  const selectType = (type: 'note' | 'rss' | 'calendar') => {
+  const selectType = (type: 'note' | 'rss' | 'calendar' | 'bookmark') => {
     selectedType.value = type;
     rssUrlError.value = null; // エラーリセット
     // RSS選択時にURL入力欄にフォーカス (nextTick後)
@@ -105,6 +111,8 @@
       emit('add', { type: 'rss', feedUrl: rssFeedUrl.value.trim() });
     } else if (selectedType.value === 'calendar') {
       emit('add', { type: 'calendar' });
+    } else if (selectedType.value === 'bookmark') {
+      emit('add', { type: 'bookmark' });
     } else {
       // メモウィジェット追加イベントを発行
       emit('add', { type: 'note' });
