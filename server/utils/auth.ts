@@ -4,6 +4,11 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { prisma } from '~/server/utils/prisma';
 import { hash, verify } from '@node-rs/argon2';
 import { createError, type H3Event } from 'h3';
+import { sendEmail } from '~/server/utils/email';
+import {
+  emailVerificationTemplate,
+  passwordResetTemplate,
+} from '~/server/utils/emailTemplates';
 
 const ARGON2_PARAMS = {
   memoryCost: 19456,
@@ -31,10 +36,40 @@ export const auth = betterAuth({
         return verify(storedHash, password);
       },
     },
+    // パスワードリセットメール送信
+    sendResetPassword: async ({ user, url }) => {
+      const { subject, html, text } = passwordResetTemplate(url);
+      await sendEmail({
+        to: user.email,
+        subject,
+        html,
+        text,
+      });
+    },
+  },
+  emailVerification: {
+    // サインアップ時に自動で確認メールを送信
+    sendOnSignUp: true,
+    // 確認メール送信処理
+    sendVerificationEmail: async ({ user, url }) => {
+      const { subject, html, text } = emailVerificationTemplate(url);
+      await sendEmail({
+        to: user.email,
+        subject,
+        html,
+        text,
+      });
+    },
   },
   user: {
     additionalFields: {
       // Layout, Setting は別テーブルなので追加フィールド不要
+    },
+    // アカウント削除を有効化（パスワード確認必須）
+    deleteUser: {
+      enabled: true,
+      // 送信前にセッションを無効化しない（afterDeleteで自動処理される）
+      // sendDeleteAccountVerification を設定しない = パスワード確認のみで即時削除
     },
   },
   session: {
@@ -46,6 +81,12 @@ export const auth = betterAuth({
   rateLimit: {
     window: 15 * 60, // 15分（秒）
     max: 30, // 全認証エンドポイント合計で30回/15分
+  },
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
   },
 });
 

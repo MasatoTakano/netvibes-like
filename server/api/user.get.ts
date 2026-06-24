@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
         userId: session.user.id,
         email: session.user.email,
         name: session.user.name,
+        emailVerified: session.user.emailVerified,
       },
     };
   } catch {

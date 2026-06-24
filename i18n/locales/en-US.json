@@ -17,6 +17,7 @@
     "password": "Password",
     "name": "Name",
     "optional": "optional",
+    "or": "or",
     "error": {
       "generic": "Error occurred. Please try again later."
     }
@@ -26,6 +27,7 @@
     "button": "Register",
     "passwordHint": "8 characters or more",
     "alreadyHaveAccount": "Do you already have an account?",
+    "googleButton": "Sign up with Google",
     "success": "User registration completed successfully. Redirecting to login page.",
     "error": {
       "Invalid email format": "Invalid email format",
@@ -38,6 +40,9 @@
     "title": "Login",
     "button": "Login",
     "noAccount": "Do you not have an account?",
+    "forgotPassword": "Forgot your password?",
+    "googleButton": "Sign in with Google",
+    "oauthError": "Google sign-in failed. Please try again.",
     "error": {
       "Invalid credentials format": "mail address or password format is incorrect",
       "Incorrect email or password": "mail address or password is incorrect",
@@ -46,6 +51,50 @@
   },
   "logout": {
     "button": "Logout"
+  },
+  "forgotPassword": {
+    "title": "Password Reset",
+    "button": "Send Reset Email",
+    "success": "If an account exists for this email address, a password reset link has been sent. Please check your email.",
+    "backToLogin": "Back to Login"
+  },
+  "resetPassword": {
+    "title": "Set New Password",
+    "button": "Change Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "mismatch": "Passwords do not match.",
+    "invalidToken": "The password reset link is invalid or has expired. Please request a new reset link.",
+    "requestAgain": "Request Password Reset Again",
+    "success": "Your password has been changed. Please log in with your new password.",
+    "goToLogin": "Go to Login"
+  },
+  "emailVerification": {
+    "bannerText": "Your email address has not been verified yet. Please check your inbox for the verification email.",
+    "resend": "Resend Verification Email"
+  },
+  "settings": {
+    "title": "Account Settings",
+    "profile": "Profile",
+    "namePlaceholder": "Your name",
+    "saveName": "Save Name",
+    "nameUpdated": "Your name has been updated.",
+    "emailVerification": "Email Verification",
+    "emailVerified": "Verified",
+    "emailNotVerified": "Not verified",
+    "resendVerification": "Resend Verification Email",
+    "verificationSent": "Verification email has been sent.",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "changePasswordButton": "Change Password",
+    "passwordChanged": "Your password has been changed.",
+    "deleteAccount": "Delete Account",
+    "deleteAccountWarning": "Deleting your account will permanently remove all widgets, settings, and data. This action cannot be undone.",
+    "confirmPasswordToDelete": "Enter your password to confirm",
+    "deleteButton": "Delete Account",
+    "backToDashboard": "Back to Dashboard"
   },
   "widget": {
     "name": "Widget",

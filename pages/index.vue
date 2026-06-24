@@ -30,6 +30,13 @@
             >
               ⚙️ {{ $t('globalSettings.title') }}
             </button>
+            <!-- アカウント設定 -->
+            <NuxtLink
+              to="/settings"
+              class="button button-secondary header-button"
+            >
+              🔑 {{ $t('settings.title') }}
+            </NuxtLink>
             <!-- ログアウト -->
             <button
               class="button button-secondary header-button"
@@ -40,6 +47,17 @@
           </template>
         </div>
       </header>
+      <!-- メール未確認バナー -->
+      <div v-if="isLoggedIn && !user?.emailVerified" class="email-verify-banner">
+        <span>{{ $t('emailVerification.bannerText') }}</span>
+        <button
+          class="banner-resend-btn"
+          :disabled="isResending"
+          @click="handleResendVerification"
+        >
+          {{ isResending ? $t('common.loading') + '...' : $t('emailVerification.resend') }}
+        </button>
+      </div>
       <ClientOnly placeholder="Loading splitpanes...">
         <splitpanes
           v-if="!isLoading && panesData.length > 0"
@@ -192,7 +210,7 @@
   import WidgetCard from '~/components/WidgetCard.vue';
 
   const { t } = useI18n();
-  const { user, isLoggedIn, logout } = useAuth();
+  const { user, isLoggedIn, logout, resendVerificationEmail } = useAuth();
 
   // --- Layout: state + load/save のみ ---
   const {
@@ -289,6 +307,19 @@
     await loadLayout();
   });
 
+  // --- メール確認再送 ---
+  const isResending = ref(false);
+  const handleResendVerification = async () => {
+    isResending.value = true;
+    try {
+      await resendVerificationEmail();
+    } catch (err) {
+      console.error('[ERROR] Resend verification email failed:', err);
+    } finally {
+      isResending.value = false;
+    }
+  };
+
   // --- ページメタ情報 ---
   useHead({ title: t('appTitle') });
 </script>
@@ -327,6 +358,7 @@
   .header-button {
     /* font-family, font-size は assets/css/main.css の .button で定義 */
     padding: 6px 12px; /* ヘッダー内のボタンは少し小さく */
+    text-decoration: none; /* NuxtLink(<a>) の下線を消す */
   }
 
   .user-info {
@@ -347,6 +379,39 @@
   }
 
   /* Splitpanes コンテナ */
+  /* --- メール確認バナー --- */
+  .email-verify-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 20px;
+    background-color: #fff3cd;
+    border-bottom: 1px solid #ffeaa7;
+    color: #856404;
+    font-size: 0.9em;
+  }
+
+  .banner-resend-btn {
+    flex-shrink: 0;
+    padding: 6px 16px;
+    font-size: 0.85em;
+    cursor: pointer;
+    background-color: #ffc107;
+    color: #333;
+    border: none;
+    border-radius: 4px;
+  }
+
+  .banner-resend-btn:hover:not(:disabled) {
+    background-color: #e0a800;
+  }
+
+  .banner-resend-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
   .app-splitpanes {
     flex-grow: 1; /* 残りの高さをすべて使う */
     display: flex; /* Splitpanes内部で必要 */

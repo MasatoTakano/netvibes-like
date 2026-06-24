@@ -19,6 +19,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
             userId: session.user.id,
             email: session.user.email,
             name: session.user.name,
+            emailVerified: session.user.emailVerified,
           };
         }
       } catch (error) {

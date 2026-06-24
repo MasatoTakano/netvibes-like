@@ -17,6 +17,7 @@
     "password": "パスワード",
     "name": "名前",
     "optional": "任意",
+    "or": "または",
     "error": {
       "generic": "エラーが発生しました。時間をおいて再度お試しください。"
     }
@@ -26,6 +27,7 @@
     "button": "登録する",
     "passwordHint": "8文字以上で入力してください",
     "alreadyHaveAccount": "アカウントをお持ちですか？",
+    "googleButton": "Googleで登録",
     "success": "ユーザー登録が完了しました。ログインページに移動します。",
     "error": {
       "Invalid email format": "メールアドレスの形式が正しくありません。",
@@ -38,6 +40,9 @@
     "title": "ログイン",
     "button": "ログイン",
     "noAccount": "アカウントをお持ちでないですか？",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "googleButton": "Googleでログイン",
+    "oauthError": "Googleログインに失敗しました。もう一度お試しください。",
     "error": {
       "Invalid credentials format": "メールアドレスまたはパスワードの形式が正しくありません。",
       "Incorrect email or password": "メールアドレスまたはパスワードが正しくありません。",
@@ -46,6 +51,50 @@
   },
   "logout": {
     "button": "ログアウト"
+  },
+  "forgotPassword": {
+    "title": "パスワードリセット",
+    "button": "リセットメールを送信",
+    "success": "入力されたメールアドレスがアカウントに存在する場合、パスワードリセットのメールを送信しました。メールをご確認ください。",
+    "backToLogin": "ログインページに戻る"
+  },
+  "resetPassword": {
+    "title": "新しいパスワードの設定",
+    "button": "パスワードを変更",
+    "newPassword": "新しいパスワード",
+    "confirmPassword": "新しいパスワード（確認）",
+    "mismatch": "パスワードが一致しません。",
+    "invalidToken": "パスワードリセットリンクの有効期限が切れているか、無効です。もう一度リセットをリクエストしてください。",
+    "requestAgain": "パスワードリセットをもう一度リクエスト",
+    "success": "パスワードが変更されました。新しいパスワードでログインしてください。",
+    "goToLogin": "ログインページへ"
+  },
+  "emailVerification": {
+    "bannerText": "メールアドレスの確認が完了していません。確認メールをご確認ください。",
+    "resend": "確認メールを再送"
+  },
+  "settings": {
+    "title": "アカウント設定",
+    "profile": "プロフィール",
+    "namePlaceholder": "お名前",
+    "saveName": "名前を保存",
+    "nameUpdated": "名前を更新しました。",
+    "emailVerification": "メールアドレス確認",
+    "emailVerified": "確認済み",
+    "emailNotVerified": "未確認",
+    "resendVerification": "確認メールを再送",
+    "verificationSent": "確認メールを送信しました。",
+    "changePassword": "パスワード変更",
+    "currentPassword": "現在のパスワード",
+    "newPassword": "新しいパスワード",
+    "confirmNewPassword": "新しいパスワード（確認）",
+    "changePasswordButton": "パスワードを変更",
+    "passwordChanged": "パスワードを変更しました。",
+    "deleteAccount": "アカウント削除",
+    "deleteAccountWarning": "アカウントを削除すると、すべてのウィジェット・設定・データが完全に削除されます。この操作は取り消せません。",
+    "confirmPasswordToDelete": "確認のためパスワードを入力してください",
+    "deleteButton": "アカウントを削除",
+    "backToDashboard": "ダッシュボードに戻る"
   },
   "widget": {
     "name": "ウィジェット",
