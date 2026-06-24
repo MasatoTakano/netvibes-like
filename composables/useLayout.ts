@@ -1,19 +1,9 @@
 // composables/useLayout.ts
-// レイアウトデータのCRUD、ウィジェット操作、ロード/保存を管理
+// レイアウトデータの state 管理、ロード/保存を担当する。
+// ウィジェットのCRUD操作は useWidgetMutations に分離済み。
 
 import { ref } from 'vue';
-import type { PaneData, NoteWidget, RssWidget, CalendarWidget, BookmarkWidget, BookmarkItem } from '~/types';
-import {
-  DEFAULT_NOTE_FONT_FAMILY,
-  DEFAULT_NOTE_FONT_SIZE,
-  DEFAULT_RSS_FONT_FAMILY,
-  DEFAULT_RSS_FONT_SIZE,
-  DEFAULT_RSS_ITEM_COUNT,
-  DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
-  DEFAULT_BOOKMARK_FONT_FAMILY,
-  DEFAULT_BOOKMARK_FONT_SIZE,
-  DEFAULT_BOOKMARK_COLUMNS,
-} from '~/constants';
+import type { PaneData } from '~/types';
 import { useDebounce } from './useDebounce';
 
 // デフォルトの初期データ
@@ -113,187 +103,6 @@ export function useLayout() {
     }
   }
 
-  // --- ウィジェットCRUD ---
-
-  function addNoteWidget(paneId: string) {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const newWidget: NoteWidget = {
-        id: crypto.randomUUID(),
-        type: 'note',
-        title: 'New Memo',
-        content: '',
-        fontFamily: DEFAULT_NOTE_FONT_FAMILY,
-        fontSize: DEFAULT_NOTE_FONT_SIZE,
-        isCollapsed: false,
-      };
-      targetPane.widgets.push(newWidget);
-      saveLayoutDebounced();
-    }
-  }
-
-  function addRssWidget(paneId: string, feedUrl: string, itemCount: number) {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const newWidget: RssWidget = {
-        id: crypto.randomUUID(),
-        type: 'rss',
-        feedUrl: feedUrl,
-        itemCount: itemCount || DEFAULT_RSS_ITEM_COUNT,
-        feedTitle: 'RSS Feed',
-        fontFamily: DEFAULT_RSS_FONT_FAMILY,
-        fontSize: DEFAULT_RSS_FONT_SIZE,
-        updateIntervalMinutes: DEFAULT_RSS_UPDATE_INTERVAL_MINUTES,
-        isCollapsed: false,
-      };
-      targetPane.widgets.push(newWidget);
-      saveLayoutDebounced();
-    } else {
-      console.warn(
-        `>>> [ERROR] [Client] Could not find pane with id ${paneId} to add RSS widget.`,
-      );
-    }
-  }
-
-  function addCalendarWidget(paneId: string) {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const newWidget: CalendarWidget = {
-        id: crypto.randomUUID(),
-        type: 'calendar',
-        iframeTag: '',
-        isCollapsed: false,
-      };
-      targetPane.widgets.push(newWidget);
-      saveLayoutDebounced();
-    } else {
-      console.warn(
-        `>>> [ERROR] [Client] Could not find pane with id ${paneId} to add Calendar widget.`,
-      );
-    }
-  }
-
-  function addBookmarkWidget(paneId: string) {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const newWidget: BookmarkWidget = {
-        id: crypto.randomUUID(),
-        type: 'bookmark',
-        title: '',
-        bookmarks: [],
-        fontFamily: DEFAULT_BOOKMARK_FONT_FAMILY,
-        fontSize: DEFAULT_BOOKMARK_FONT_SIZE,
-        columns: DEFAULT_BOOKMARK_COLUMNS,
-        isCollapsed: false,
-      };
-      targetPane.widgets.push(newWidget);
-      saveLayoutDebounced();
-    } else {
-      console.warn(
-        `>>> [ERROR] [Client] Could not find pane with id ${paneId} to add Bookmark widget.`,
-      );
-    }
-  }
-
-  function removeWidget(widgetId: string, paneId: string) {
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    if (targetPane) {
-      const initialLength = targetPane.widgets.length;
-      targetPane.widgets = targetPane.widgets.filter(
-        (widget) => widget.id !== widgetId,
-      );
-      if (targetPane.widgets.length < initialLength) {
-        saveLayoutDebounced();
-      }
-    }
-  }
-
-  function updateNoteContent(widgetId: string, newContent: string) {
-    if (isLoading.value) {
-      return;
-    }
-
-    let found = false;
-    for (const pane of panesData.value) {
-      const widgetIndex = pane.widgets.findIndex(
-        (widget) => widget.id === widgetId && widget.type === 'note',
-      );
-      if (widgetIndex !== -1) {
-        (pane.widgets[widgetIndex] as NoteWidget).content = newContent;
-        found = true;
-        break;
-      }
-    }
-    if (found) {
-      saveLayoutDebounced();
-    } else {
-      console.warn(
-        `>>> 「ERROR] [Client] Attempted to update note with unknown id: ${widgetId}`,
-      );
-    }
-  }
-
-  function updateRssWidgetTitle(
-    widgetId: string,
-    paneId: string,
-    newTitle: string,
-  ) {
-    if (isLoading.value) {
-      return;
-    }
-
-    const pane = panesData.value.find((p) => p.id === paneId);
-    const widget = pane?.widgets.find(
-      (w) => w.id === widgetId && w.type === 'rss',
-    ) as RssWidget | undefined;
-    if (widget && widget.feedTitle !== newTitle) {
-      widget.feedTitle = newTitle;
-      saveLayoutDebounced();
-    }
-  }
-
-  function updateBookmarks(widgetId: string, newBookmarks: BookmarkItem[]) {
-    if (isLoading.value) {
-      return;
-    }
-
-    let found = false;
-    for (const pane of panesData.value) {
-      const widgetIndex = pane.widgets.findIndex(
-        (widget) => widget.id === widgetId && widget.type === 'bookmark',
-      );
-      if (widgetIndex !== -1) {
-        (pane.widgets[widgetIndex] as BookmarkWidget).bookmarks = newBookmarks;
-        found = true;
-        break;
-      }
-    }
-    if (found) {
-      saveLayoutDebounced();
-    } else {
-      console.warn(
-        `>>> [ERROR] [Client] Attempted to update bookmarks for unknown widget id: ${widgetId}`,
-      );
-    }
-  }
-
-  function toggleCollapse(widgetId: string, paneId: string) {
-    if (isLoading.value) {
-      return;
-    }
-
-    const pane = panesData.value.find((p) => p.id === paneId);
-    const widget = pane?.widgets.find((w) => w.id === widgetId);
-    if (widget) {
-      widget.isCollapsed = !(widget.isCollapsed ?? false);
-      saveLayoutDebounced();
-    }
-  }
-
-  function handleDragChange() {
-    saveLayoutDebounced();
-  }
-
   return {
     panesData,
     isLoading,
@@ -302,15 +111,5 @@ export function useLayout() {
     splitpanesKey,
     loadLayout,
     saveLayoutDebounced,
-    addNoteWidget,
-    addRssWidget,
-    addCalendarWidget,
-    addBookmarkWidget,
-    removeWidget,
-    updateNoteContent,
-    updateRssWidgetTitle,
-    updateBookmarks,
-    toggleCollapse,
-    handleDragChange,
   };
 }

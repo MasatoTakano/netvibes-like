@@ -194,24 +194,27 @@
   const { t } = useI18n();
   const { user, isLoggedIn, logout } = useAuth();
 
-  // --- Layout: レイアウトCRUD + ウィジェット操作 ---
+  // --- Layout: state + load/save のみ ---
   const {
     panesData,
     isLoading,
     splitpanesKey,
     loadLayout,
     saveLayoutDebounced,
-    addNoteWidget,
-    addRssWidget,
-    addCalendarWidget,
-    addBookmarkWidget,
-    removeWidget,
+  } = useLayout();
+
+  // --- Widget Mutations: ウィジェットCRUD操作 ---
+  const mutations = useWidgetMutations({
+    panesData,
+    saveLayoutDebounced,
+  });
+  const {
     updateNoteContent,
     updateRssWidgetTitle,
     updateBookmarks,
     toggleCollapse,
     handleDragChange,
-  } = useLayout();
+  } = mutations;
 
   // --- Global Settings: フォント設定 + CSS変数 ---
   const { globalSettings, globalStyles, loadGlobalSettings, saveGlobalSettingsDebounced } =
@@ -224,7 +227,7 @@
     saveLayoutDebounced,
   });
 
-  // --- Widget Modal: モーダル管理 + 設定保存 ---
+  // --- Widget Modal: モーダル開閉状態のみ管理 ---
   const {
     activeModal,
     editingWidgetData,
@@ -244,12 +247,7 @@
     handleSaveGlobalSettings,
   } = useWidgetModal({
     panesData,
-    saveLayoutDebounced,
-    addNoteWidget,
-    addRssWidget,
-    addCalendarWidget,
-    addBookmarkWidget,
-    removeWidget,
+    mutations,
     globalSettings,
     saveGlobalSettingsDebounced,
     t,

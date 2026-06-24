@@ -1,5 +1,6 @@
 // composables/useWidgetModal.ts
-// モーダル管理（開閉・設定保存・ウィジェット追加・削除確認）
+// モーダルの開閉状態管理のみを担当する。
+// ウィジェットの mutation（追加・削除・設定更新）は useWidgetMutations に委譲する。
 
 import { ref, type Ref } from 'vue';
 import type {
@@ -15,33 +16,18 @@ import type {
   BookmarkSettingsPayload,
 } from '~/types';
 import { DEFAULT_RSS_ITEM_COUNT } from '~/constants';
+import type { useWidgetMutations } from './useWidgetMutations';
 
 type ModalType = 'rss' | 'memo' | 'global' | 'add' | 'delete' | 'calendar' | 'bookmark' | null;
 
 export function useWidgetModal(options: {
   panesData: Ref<PaneData[]>;
-  saveLayoutDebounced: () => void;
-  addNoteWidget: (paneId: string) => void;
-  addRssWidget: (paneId: string, feedUrl: string, itemCount: number) => void;
-  addCalendarWidget: (paneId: string) => void;
-  addBookmarkWidget: (paneId: string) => void;
-  removeWidget: (widgetId: string, paneId: string) => void;
+  mutations: ReturnType<typeof useWidgetMutations>;
   globalSettings: GlobalSettings;
   saveGlobalSettingsDebounced: () => void;
   t: (key: string) => string;
 }) {
-  const {
-    panesData,
-    saveLayoutDebounced,
-    addNoteWidget,
-    addRssWidget,
-    addCalendarWidget,
-    addBookmarkWidget,
-    removeWidget,
-    globalSettings,
-    saveGlobalSettingsDebounced,
-    t,
-  } = options;
+  const { panesData, mutations, globalSettings, saveGlobalSettingsDebounced, t } = options;
 
   // --- State ---
   const activeModal = ref<ModalType>(null);
@@ -101,7 +87,7 @@ export function useWidgetModal(options: {
     widgetToDelete.value = null;
   }
 
-  // --- ウィジェット追加 ---
+  // --- ウィジェット追加 (mutations に委譲) ---
 
   function handleAddWidget(payload: {
     type: 'note' | 'rss' | 'calendar' | 'bookmark';
@@ -111,13 +97,13 @@ export function useWidgetModal(options: {
       const firstPaneId = panesData.value[0].id;
 
       if (payload.type === 'note') {
-        addNoteWidget(firstPaneId);
+        mutations.addNoteWidget(firstPaneId);
       } else if (payload.type === 'rss' && payload.feedUrl) {
-        addRssWidget(firstPaneId, payload.feedUrl, DEFAULT_RSS_ITEM_COUNT);
+        mutations.addRssWidget(firstPaneId, payload.feedUrl, DEFAULT_RSS_ITEM_COUNT);
       } else if (payload.type === 'calendar') {
-        addCalendarWidget(firstPaneId);
+        mutations.addCalendarWidget(firstPaneId);
       } else if (payload.type === 'bookmark') {
-        addBookmarkWidget(firstPaneId);
+        mutations.addBookmarkWidget(firstPaneId);
       }
     } else {
       console.error(
@@ -128,7 +114,7 @@ export function useWidgetModal(options: {
     closeModal();
   }
 
-  // --- ウィジェット削除 ---
+  // --- ウィジェット削除 (mutations に委譲) ---
 
   function confirmRemoveWidget(widgetId: string, paneId: string) {
     const pane = panesData.value.find((p) => p.id === paneId);
@@ -152,25 +138,16 @@ export function useWidgetModal(options: {
 
   function handleConfirmDelete() {
     if (widgetToDelete.value) {
-      removeWidget(widgetToDelete.value.widgetId, widgetToDelete.value.paneId);
+      mutations.removeWidget(widgetToDelete.value.widgetId, widgetToDelete.value.paneId);
     }
     closeModal();
   }
 
-  // --- 設定モーダル save ハンドラ ---
+  // --- 設定モーダル save ハンドラ (mutations.updateWidgetSettings に委譲) ---
 
   function handleSaveRssSettings(payload: RssSettingsPayload) {
     const { widgetId, paneId, settings } = payload;
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    const widgetIndex = targetPane?.widgets.findIndex(
-      (w) => w.id === widgetId && w.type === 'rss',
-    );
-
-    if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-      const widgetToUpdate = targetPane.widgets[widgetIndex] as RssWidget;
-      Object.assign(widgetToUpdate, settings);
-      saveLayoutDebounced();
-    } else {
+    if (!mutations.updateWidgetSettings(widgetId, paneId, 'rss', settings as Record<string, unknown>)) {
       console.error(
         `>>> [ERROR] [Client] Could not find RSS widget ${widgetId} to save settings from modal.`,
       );
@@ -180,16 +157,7 @@ export function useWidgetModal(options: {
 
   function handleSaveMemoSettings(payload: MemoSettingsPayload) {
     const { widgetId, paneId, settings } = payload;
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    const widgetIndex = targetPane?.widgets.findIndex(
-      (w) => w.id === widgetId && w.type === 'note',
-    );
-
-    if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-      const widgetToUpdate = targetPane.widgets[widgetIndex] as NoteWidget;
-      Object.assign(widgetToUpdate, settings);
-      saveLayoutDebounced();
-    } else {
+    if (!mutations.updateWidgetSettings(widgetId, paneId, 'note', settings as Record<string, unknown>)) {
       console.error(
         `>>> [ERROR] [Client] Could not find Memo widget ${widgetId} to save settings from modal.`,
       );
@@ -199,16 +167,7 @@ export function useWidgetModal(options: {
 
   function handleSaveCalendarSettings(payload: CalendarSettingsPayload) {
     const { widgetId, paneId, settings } = payload;
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    const widgetIndex = targetPane?.widgets.findIndex(
-      (w) => w.id === widgetId && w.type === 'calendar',
-    );
-
-    if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-      const widgetToUpdate = targetPane.widgets[widgetIndex] as CalendarWidget;
-      Object.assign(widgetToUpdate, settings);
-      saveLayoutDebounced();
-    } else {
+    if (!mutations.updateWidgetSettings(widgetId, paneId, 'calendar', settings as Record<string, unknown>)) {
       console.error(
         `>>> [ERROR] [Client] Could not find Calendar widget ${widgetId} to save settings from modal.`,
       );
@@ -218,16 +177,7 @@ export function useWidgetModal(options: {
 
   function handleSaveBookmarkSettings(payload: BookmarkSettingsPayload) {
     const { widgetId, paneId, settings } = payload;
-    const targetPane = panesData.value.find((p) => p.id === paneId);
-    const widgetIndex = targetPane?.widgets.findIndex(
-      (w) => w.id === widgetId && w.type === 'bookmark',
-    );
-
-    if (targetPane && widgetIndex !== undefined && widgetIndex > -1) {
-      const widgetToUpdate = targetPane.widgets[widgetIndex] as BookmarkWidget;
-      Object.assign(widgetToUpdate, settings);
-      saveLayoutDebounced();
-    } else {
+    if (!mutations.updateWidgetSettings(widgetId, paneId, 'bookmark', settings as Record<string, unknown>)) {
       console.error(
         `>>> [ERROR] [Client] Could not find Bookmark widget ${widgetId} to save settings from modal.`,
       );
@@ -237,18 +187,8 @@ export function useWidgetModal(options: {
 
   function handleSaveGlobalSettings(payload: GlobalSettings) {
     Object.assign(globalSettings, payload);
-
-    panesData.value.forEach((pane) => {
-      pane.widgets.forEach((widget) => {
-        if (widget.type === 'note' || widget.type === 'rss' || widget.type === 'bookmark') {
-          widget.fontFamily = payload.fontFamily;
-          widget.fontSize = payload.fontSize;
-        }
-      });
-    });
-
+    mutations.applyGlobalFonts(payload.fontFamily, payload.fontSize);
     saveGlobalSettingsDebounced();
-    saveLayoutDebounced();
     closeModal();
   }
 
