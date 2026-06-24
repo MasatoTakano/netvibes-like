@@ -3,11 +3,14 @@ import { defineEventHandler, createError, readBody } from 'h3';
 import { z } from 'zod';
 import { prisma } from '~/server/utils/prisma';
 import { requireSession } from '~/server/utils/auth';
+import { AVAILABLE_FONTS } from '~/constants';
 
 // --- フォント設定のバリデーションスキーマ ---
-// fontFamily は CSS に渡されるため長さ上限を設け、fontSize は表示可能な範囲に制限する。
+// fontFamily は AVAILABLE_FONTS の allowlist に限定し、
+// fontSize は表示可能な範囲に制限する。
+// layout.post.ts の fontSchema と同じ方針。
 const fontSettingsSchema = z.object({
-  fontFamily: z.string().min(1).max(100),
+  fontFamily: z.enum(AVAILABLE_FONTS as [string, ...string[]]),
   fontSize: z.number().int().min(6).max(72),
 });
 

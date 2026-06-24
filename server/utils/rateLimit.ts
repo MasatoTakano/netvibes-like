@@ -14,12 +14,30 @@ export interface RateLimitConfig {
 
 interface BucketEntry {
   timestamps: number[];
+  lastAccessAt: number;
 }
 
 // key → { timestamps[] }
 // Map はリークしないよう、エントリが maxRequests を超えた時点で
 // ウィンドウ外のタイムスタンプを破棄する。
+// また、定期的なスイープ（sweep）で長期間アクセスのないエントリを削除する。
 const buckets = new Map<string, BucketEntry>();
+
+// --- 定期スイープ: 長期間アクセスのないエントリを削除 ---
+const SWEEP_INTERVAL_MS = 5 * 60 * 1000; // 5 分ごとに実行
+const SWEEP_MAX_IDLE_MS = 15 * 60 * 1000; // 15 分以上アクセスがないエントリを削除
+
+if (process.env.NODE_ENV !== 'test') {
+  const timer = setInterval(() => {
+    const now = Date.now();
+    buckets.forEach((entry, key) => {
+      if (now - entry.lastAccessAt > SWEEP_MAX_IDLE_MS) {
+        buckets.delete(key);
+      }
+    });
+  }, SWEEP_INTERVAL_MS);
+  timer.unref(); // プロセス終了をブロックしない
+}
 
 /**
  * 指定キーに対してレートリミットをチェックする。
@@ -40,7 +58,7 @@ export function checkRateLimit(
   let entry = buckets.get(key);
 
   if (!entry) {
-    entry = { timestamps: [] };
+    entry = { timestamps: [], lastAccessAt: now };
     buckets.set(key, entry);
   }
 
@@ -57,6 +75,7 @@ export function checkRateLimit(
   }
 
   entry.timestamps.push(now);
+  entry.lastAccessAt = now;
 
   return {
     allowed: true,
